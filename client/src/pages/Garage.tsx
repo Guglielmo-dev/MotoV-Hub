@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useMotorcycles, useCreateMotorcycle } from "@/hooks/use-motorcycles";
 import { Link } from "wouter";
-import { Plus, Bike, Calendar, Settings2 } from "lucide-react";
+import { Plus, Bike, Calendar, Settings2, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function Garage() {
   const { data: motorcycles, isLoading } = useMotorcycles();
   const { mutate: createBike, isPending } = useCreateMotorcycle();
   const [isOpen, setIsOpen] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -16,6 +17,20 @@ export function Garage() {
     year: new Date().getFullYear(),
     engineSize: '',
     mileage: 0,
+    description: '',
+    photos: ''
+  });
+
+  // Registration extraction form
+  const [regData, setRegData] = useState({
+    brand: '',
+    model: '',
+    year: new Date().getFullYear(),
+    engineSize: '',
+    mileage: 0,
+    registrationDate: '',
+    initialMileage: 0,
+    documentUrl: '',
     description: '',
     photos: ''
   });
@@ -34,6 +49,27 @@ export function Garage() {
     });
   };
 
+  const handleRegistrationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createBike({
+      brand: regData.brand,
+      model: regData.model,
+      year: Number(regData.year),
+      engineSize: regData.engineSize,
+      mileage: Number(regData.initialMileage),
+      description: regData.description,
+      photos: regData.photos,
+      registrationDocumentUrl: regData.documentUrl,
+      registrationDate: regData.registrationDate,
+      initialMileage: Number(regData.initialMileage),
+    }, {
+      onSuccess: () => {
+        setIsRegistrationOpen(false);
+        setRegData({ brand: '', model: '', year: new Date().getFullYear(), engineSize: '', mileage: 0, registrationDate: '', initialMileage: 0, documentUrl: '', description: '', photos: '' });
+      }
+    });
+  };
+
   return (
     <div className="space-y-8 fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -42,55 +78,127 @@ export function Garage() {
           <p className="text-muted-foreground mt-1">Manage your collection of motorcycles.</p>
         </div>
 
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
-              <Plus className="w-5 h-5" />
-              Add Motorcycle
-            </button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">New Motorcycle</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Brand</label>
-                  <input required value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="e.g. Ducati" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Model</label>
-                  <input required value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="e.g. Panigale V4" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Year</label>
-                  <input type="number" required value={formData.year} onChange={e => setFormData({...formData, year: parseInt(e.target.value)})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Engine (cc)</label>
-                  <input value={formData.engineSize} onChange={e => setFormData({...formData, engineSize: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="1103" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Mileage</label>
-                  <input type="number" required value={formData.mileage} onChange={e => setFormData({...formData, mileage: parseInt(e.target.value)})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Photo URL (Optional)</label>
-                <input value={formData.photos} onChange={e => setFormData({...formData, photos: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="https://..." />
-              </div>
-
-              <button type="submit" disabled={isPending} className="w-full py-3 bg-primary text-white rounded-xl font-bold mt-4 hover:bg-primary/90 transition-colors disabled:opacity-50">
-                {isPending ? "Adding..." : "Save to Garage"}
+        <div className="flex gap-2">
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <button className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
+                <Plus className="w-5 h-5" />
+                Add Motorcycle
               </button>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">New Motorcycle</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Brand</label>
+                    <input required value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="e.g. Ducati" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Model</label>
+                    <input required value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="e.g. Panigale V4" />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Year</label>
+                    <input type="number" required value={formData.year} onChange={e => setFormData({...formData, year: parseInt(e.target.value)})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Engine (cc)</label>
+                    <input value={formData.engineSize} onChange={e => setFormData({...formData, engineSize: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="1103" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Mileage</label>
+                    <input type="number" required value={formData.mileage} onChange={e => setFormData({...formData, mileage: parseInt(e.target.value)})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description</label>
+                  <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none h-20" placeholder="e.g. Italian classic, excellent condition" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Photo URL (Optional)</label>
+                  <input value={formData.photos} onChange={e => setFormData({...formData, photos: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="https://..." />
+                </div>
+
+                <button type="submit" disabled={isPending} className="w-full py-3 bg-primary text-white rounded-xl font-bold mt-4 hover:bg-primary/90 transition-colors disabled:opacity-50">
+                  {isPending ? "Adding..." : "Save to Garage"}
+                </button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isRegistrationOpen} onOpenChange={setIsRegistrationOpen}>
+            <DialogTrigger asChild>
+              <button className="flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground font-semibold rounded-xl hover:bg-white/10 transition-all border border-white/5">
+                <FileText className="w-5 h-5" />
+                From Registration
+              </button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">Add from Registration Document</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleRegistrationSubmit} className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Brand</label>
+                    <input required value={regData.brand} onChange={e => setRegData({...regData, brand: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="e.g. Ducati" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Model</label>
+                    <input required value={regData.model} onChange={e => setRegData({...regData, model: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="e.g. Panigale V4" />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Year</label>
+                    <input type="number" required value={regData.year} onChange={e => setRegData({...regData, year: parseInt(e.target.value)})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Engine (cc)</label>
+                    <input value={regData.engineSize} onChange={e => setRegData({...regData, engineSize: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="1103" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Initial Mileage</label>
+                    <input type="number" required value={regData.initialMileage} onChange={e => setRegData({...regData, initialMileage: parseInt(e.target.value)})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Registration Date</label>
+                  <input type="date" required value={regData.registrationDate} onChange={e => setRegData({...regData, registrationDate: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Document URL</label>
+                  <input value={regData.documentUrl} onChange={e => setRegData({...regData, documentUrl: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="https://..." />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description</label>
+                  <textarea value={regData.description} onChange={e => setRegData({...regData, description: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none h-20" placeholder="e.g. Italian classic, excellent condition" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Photo URL</label>
+                  <input value={regData.photos} onChange={e => setRegData({...regData, photos: e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 focus:border-primary outline-none" placeholder="https://..." />
+                </div>
+
+                <button type="submit" disabled={isPending} className="w-full py-3 bg-primary text-white rounded-xl font-bold mt-4 hover:bg-primary/90 transition-colors disabled:opacity-50">
+                  {isPending ? "Adding..." : "Create Motorcycle"}
+                </button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {isLoading ? (

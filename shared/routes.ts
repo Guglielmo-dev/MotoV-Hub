@@ -197,6 +197,23 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    addHistoricalMaintenance: {
+      method: 'POST' as const,
+      path: '/api/motorcycles/:motorcycleId/maintenance-history' as const,
+      input: z.object({
+        title: z.string().min(1, "Service title is required"),
+        date: z.string().min(1, "Date is required"),
+        mileage: z.coerce.number().min(0, "Mileage must be non-negative"),
+        cost: z.coerce.string().optional(),
+        notes: z.string().optional(),
+      }),
+      responses: {
+        201: z.custom<typeof maintenance.$inferSelect>(),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
   }
 };
 

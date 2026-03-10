@@ -297,5 +297,32 @@ export async function registerRoutes(
     }
   });
 
+  // Add Historical Maintenance Route
+  app.post(api.documents.addHistoricalMaintenance.path, requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const motorcycleId = Number(req.params.motorcycleId);
+      const motorcycle = await storage.getMotorcycle(motorcycleId);
+      if (!motorcycle || motorcycle.userId !== userId) {
+        return res.status(404).json({ message: "Motorcycle not found" });
+      }
+      const input = api.documents.addHistoricalMaintenance.input.parse(req.body);
+      const record = await storage.createMaintenanceEvent(motorcycleId, {
+        title: input.title,
+        date: input.date,
+        mileage: input.mileage,
+        cost: input.cost || "0",
+        notes: input.notes,
+      });
+      res.status(201).json(record);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.errors[0].message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  });
+
   return httpServer;
 }

@@ -36,7 +36,9 @@ export function MotorcycleDetails() {
   const [isMaintOpen, setIsMaintOpen] = useState(false);
   const [isModOpen, setIsModOpen] = useState(false);
   const [isDocOpen, setIsDocOpen] = useState(false);
+  const [isHistoricalOpen, setIsHistoricalOpen] = useState(false);
   const [docLoading, setDocLoading] = useState(false);
+  const [historicalForm, setHistoricalForm] = useState({ title: '', date: '', mileage: 0, cost: '', notes: '' });
 
   if (bikeLoading) return <div className="animate-pulse h-96 bg-card rounded-3xl" />;
   if (!bike) return <div className="text-destructive font-bold text-center py-20">Motorcycle not found</div>;
@@ -64,6 +66,19 @@ export function MotorcycleDetails() {
       alert('Failed to upload document');
     } finally {
       setDocLoading(false);
+    }
+  };
+
+  const handleAddHistorical = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await apiRequest('POST', `/api/motorcycles/${id}/maintenance-history`, historicalForm);
+      setIsHistoricalOpen(false);
+      setHistoricalForm({ title: '', date: '', mileage: 0, cost: '', notes: '' });
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to add maintenance record:', error);
+      alert('Failed to add maintenance record');
     }
   };
 
@@ -249,13 +264,34 @@ export function MotorcycleDetails() {
 
           <TabsContent value="documents" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-2xl font-bold font-display">Registration Documents</h3>
-              <Dialog open={isDocOpen} onOpenChange={setIsDocOpen}>
-                <DialogTrigger asChild>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-white/10 text-sm font-medium rounded-lg transition-colors border border-white/5">
-                    <Plus className="w-4 h-4" /> Upload Registration
-                  </button>
-                </DialogTrigger>
+              <h3 className="text-2xl font-bold font-display">Registration Documents & History</h3>
+              <div className="flex gap-2">
+                <Dialog open={isHistoricalOpen} onOpenChange={setIsHistoricalOpen}>
+                  <DialogTrigger asChild>
+                    <button className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-white/10 text-sm font-medium rounded-lg transition-colors border border-white/5">
+                      <Plus className="w-4 h-4" /> Add Past Service
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card border-white/10 text-foreground">
+                    <DialogHeader><DialogTitle>Log Historical Service</DialogTitle></DialogHeader>
+                    <form onSubmit={handleAddHistorical} className="space-y-4">
+                      <input required value={historicalForm.title} onChange={e=>setHistoricalForm({...historicalForm,title:e.target.value})} placeholder="Service Title (e.g. Oil Change)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                      <div className="grid grid-cols-2 gap-4">
+                        <input required type="date" value={historicalForm.date} onChange={e=>setHistoricalForm({...historicalForm,date:e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                        <input type="number" value={historicalForm.cost} onChange={e=>setHistoricalForm({...historicalForm,cost:e.target.value})} placeholder="Cost (optional)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                      </div>
+                      <input required type="number" value={historicalForm.mileage} onChange={e=>setHistoricalForm({...historicalForm,mileage:Number(e.target.value)})} placeholder="Mileage at service" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                      <textarea value={historicalForm.notes} onChange={e=>setHistoricalForm({...historicalForm,notes:e.target.value})} placeholder="Notes from service booklet (Optional)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 h-20" />
+                      <button type="submit" className="w-full py-3 bg-primary text-white rounded-xl font-bold">Save Record</button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={isDocOpen} onOpenChange={setIsDocOpen}>
+                  <DialogTrigger asChild>
+                    <button className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-white/10 text-sm font-medium rounded-lg transition-colors border border-white/5">
+                      <Plus className="w-4 h-4" /> Upload Registration
+                    </button>
+                  </DialogTrigger>
                 <DialogContent className="bg-card border-white/10 text-foreground">
                   <DialogHeader><DialogTitle>Upload Vehicle Registration</DialogTitle></DialogHeader>
                   <form onSubmit={handleUploadDocument} className="space-y-4">
@@ -280,7 +316,8 @@ export function MotorcycleDetails() {
                     <button type="submit" disabled={docLoading} className="w-full py-3 bg-primary text-white rounded-xl font-bold">{docLoading ? "Uploading..." : "Upload Document"}</button>
                   </form>
                 </DialogContent>
-              </Dialog>
+                </Dialog>
+              </div>
             </div>
 
             {bike.registrationDocumentUrl ? (
