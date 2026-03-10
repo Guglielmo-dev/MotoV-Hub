@@ -21,6 +21,9 @@ export const motorcycles = pgTable("motorcycles", {
   description: text("description"),
   nftContractAddress: text("nft_contract_address"),
   nftTokenId: text("nft_token_id"),
+  registrationDocumentUrl: text("registration_document_url"),
+  registrationDate: text("registration_date"),
+  initialMileage: integer("initial_mileage"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

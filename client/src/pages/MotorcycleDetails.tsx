@@ -7,8 +7,9 @@ import { ConnectWallet } from "@/components/web3/ConnectWallet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { ArrowLeft, Wrench, Settings, Trash2, Plus, PenTool, Link as LinkIcon, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Wrench, Settings, Trash2, Plus, PenTool, Link as LinkIcon, ShieldAlert, FileText } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 export function MotorcycleDetails() {
   const [, params] = useRoute("/garage/:id");
@@ -30,9 +31,12 @@ export function MotorcycleDetails() {
 
   const [maintForm, setMaintForm] = useState({ title: '', date: '', mileage: 0, cost: 0, notes: '' });
   const [modForm, setModForm] = useState({ title: '', price: 0, installDate: '', description: '' });
+  const [docForm, setDocForm] = useState({ documentUrl: '', registrationDate: '', initialMileage: 0, createMaintenanceRecord: true });
   
   const [isMaintOpen, setIsMaintOpen] = useState(false);
   const [isModOpen, setIsModOpen] = useState(false);
+  const [isDocOpen, setIsDocOpen] = useState(false);
+  const [docLoading, setDocLoading] = useState(false);
 
   if (bikeLoading) return <div className="animate-pulse h-96 bg-card rounded-3xl" />;
   if (!bike) return <div className="text-destructive font-bold text-center py-20">Motorcycle not found</div>;
@@ -44,6 +48,22 @@ export function MotorcycleDetails() {
   const handleDeleteBike = () => {
     if(confirm("Are you sure you want to scrap this motorcycle? All data will be lost.")) {
       deleteBike(id, { onSuccess: () => setLocation('/garage') });
+    }
+  };
+
+  const handleUploadDocument = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDocLoading(true);
+    try {
+      const response = await apiRequest('POST', `/api/motorcycles/${id}/registration-document`, docForm);
+      setIsDocOpen(false);
+      setDocForm({ documentUrl: '', registrationDate: '', initialMileage: 0, createMaintenanceRecord: true });
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to upload document:', error);
+      alert('Failed to upload document');
+    } finally {
+      setDocLoading(false);
     }
   };
 
@@ -97,6 +117,9 @@ export function MotorcycleDetails() {
           </TabsTrigger>
           <TabsTrigger value="details" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg py-2.5 px-6">
             <Settings className="w-4 h-4 mr-2" /> Specs & Details
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg py-2.5 px-6">
+            <FileText className="w-4 h-4 mr-2" /> Documents
           </TabsTrigger>
         </TabsList>
 
@@ -211,6 +234,7 @@ export function MotorcycleDetails() {
                 <div><dt className="text-sm text-muted-foreground mb-1">Year</dt><dd className="font-medium text-lg">{bike.year}</dd></div>
                 <div><dt className="text-sm text-muted-foreground mb-1">Engine Size</dt><dd className="font-medium text-lg">{bike.engineSize}cc</dd></div>
                 <div><dt className="text-sm text-muted-foreground mb-1">Current Mileage</dt><dd className="font-medium text-lg">{bike.mileage.toLocaleString()} mi</dd></div>
+                {bike.initialMileage !== null && <div><dt className="text-sm text-muted-foreground mb-1">Initial Mileage (from registration)</dt><dd className="font-medium text-lg">{bike.initialMileage?.toLocaleString()} mi</dd></div>}
                 <div><dt className="text-sm text-muted-foreground mb-1">Added to Garage</dt><dd className="font-medium text-lg">{bike.createdAt ? format(new Date(bike.createdAt), 'MMMM yyyy') : 'Unknown'}</dd></div>
               </dl>
 
@@ -221,6 +245,56 @@ export function MotorcycleDetails() {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-2xl font-bold font-display">Registration Documents</h3>
+              <Dialog open={isDocOpen} onOpenChange={setIsDocOpen}>
+                <DialogTrigger asChild>
+                  <button className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-white/10 text-sm font-medium rounded-lg transition-colors border border-white/5">
+                    <Plus className="w-4 h-4" /> Upload Registration
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="bg-card border-white/10 text-foreground">
+                  <DialogHeader><DialogTitle>Upload Vehicle Registration</DialogTitle></DialogHeader>
+                  <form onSubmit={handleUploadDocument} className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Document URL or Path</label>
+                      <input required value={docForm.documentUrl} onChange={e=>setDocForm({...docForm,documentUrl:e.target.value})} placeholder="Document URL" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Registration Date</label>
+                        <input required type="date" value={docForm.registrationDate} onChange={e=>setDocForm({...docForm,registrationDate:e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Initial Mileage</label>
+                        <input required type="number" value={docForm.initialMileage} onChange={e=>setDocForm({...docForm,initialMileage:Number(e.target.value)})} placeholder="0" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input type="checkbox" checked={docForm.createMaintenanceRecord} onChange={e=>setDocForm({...docForm,createMaintenanceRecord:e.target.checked})} className="w-4 h-4" />
+                      <span className="text-sm font-medium">Create initial maintenance record from registration date</span>
+                    </label>
+                    <button type="submit" disabled={docLoading} className="w-full py-3 bg-primary text-white rounded-xl font-bold">{docLoading ? "Uploading..." : "Upload Document"}</button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {bike.registrationDocumentUrl ? (
+              <div className="glass-panel p-6 rounded-2xl border border-white/5">
+                <h4 className="font-bold text-lg mb-4">Registration Document</h4>
+                <dl className="space-y-3">
+                  <div><dt className="text-sm text-muted-foreground">Registered Date</dt><dd className="font-medium">{bike.registrationDate ? format(new Date(bike.registrationDate), 'MMMM d, yyyy') : 'N/A'}</dd></div>
+                  <div><dt className="text-sm text-muted-foreground">Initial Mileage</dt><dd className="font-medium">{bike.initialMileage?.toLocaleString()} mi</dd></div>
+                  <div><dt className="text-sm text-muted-foreground">Document</dt><dd className="font-mono text-sm break-all text-primary hover:underline cursor-pointer">{bike.registrationDocumentUrl}</dd></div>
+                </dl>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground glass-panel rounded-2xl">No registration document uploaded yet. Upload one to create initial maintenance history.</div>
+            )}
           </TabsContent>
         </div>
       </Tabs>

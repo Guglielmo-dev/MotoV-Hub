@@ -176,6 +176,27 @@ export const api = {
         401: errorSchemas.unauthorized,
       },
     },
+  },
+  documents: {
+    uploadRegistration: {
+      method: 'POST' as const,
+      path: '/api/motorcycles/:motorcycleId/registration-document' as const,
+      input: z.object({
+        documentUrl: z.string().min(1, "Document URL is required"),
+        registrationDate: z.string().min(1, "Registration date is required"),
+        initialMileage: z.coerce.number().min(0, "Initial mileage must be non-negative"),
+        createMaintenanceRecord: z.boolean().default(true),
+      }),
+      responses: {
+        200: z.object({
+          motorcycle: z.custom<typeof motorcycles.$inferSelect>(),
+          maintenanceCreated: z.boolean(),
+        }),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
   }
 };
 

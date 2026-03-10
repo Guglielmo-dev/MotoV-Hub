@@ -20,6 +20,8 @@ export interface IStorage {
   getModifications(motorcycleId: number): Promise<Modification[]>;
   createModification(motorcycleId: number, mod: InsertModification): Promise<Modification>;
   deleteModification(id: number): Promise<void>;
+
+  uploadRegistrationDocument(motorcycleId: number, documentUrl: string, registrationDate: string, initialMileage: number): Promise<Motorcycle>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -85,6 +87,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteModification(id: number): Promise<void> {
     await db.delete(modifications).where(eq(modifications.id, id));
+  }
+
+  async uploadRegistrationDocument(motorcycleId: number, documentUrl: string, registrationDate: string, initialMileage: number): Promise<Motorcycle> {
+    const [updated] = await db.update(motorcycles)
+      .set({ registrationDocumentUrl: documentUrl, registrationDate, initialMileage })
+      .where(eq(motorcycles.id, motorcycleId))
+      .returning();
+    return updated;
   }
 }
 

@@ -263,5 +263,39 @@ export async function registerRoutes(
     });
   });
 
+  // Registration Document Upload Route
+  app.post(api.documents.uploadRegistration.path, requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const motorcycleId = Number(req.params.motorcycleId);
+      const motorcycle = await storage.getMotorcycle(motorcycleId);
+      if (!motorcycle || motorcycle.userId !== userId) {
+        return res.status(404).json({ message: "Motorcycle not found" });
+      }
+      const input = api.documents.uploadRegistration.input.parse(req.body);
+      const updated = await storage.uploadRegistrationDocument(motorcycleId, input.documentUrl, input.registrationDate, input.initialMileage);
+      
+      let maintenanceCreated = false;
+      if (input.createMaintenanceRecord) {
+        await storage.createMaintenanceEvent(motorcycleId, {
+          title: `Vehicle Registration - Initial Service Record`,
+          date: input.registrationDate,
+          mileage: input.initialMileage,
+          cost: "0",
+          notes: `Initial maintenance record created from registration document. Registered on ${input.registrationDate} with initial mileage of ${input.initialMileage} km.`,
+        });
+        maintenanceCreated = true;
+      }
+
+      res.json({ motorcycle: updated, maintenanceCreated });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.errors[0].message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  });
+
   return httpServer;
 }
