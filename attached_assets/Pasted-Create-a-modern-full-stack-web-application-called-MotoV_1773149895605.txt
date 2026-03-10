@@ -1,0 +1,122 @@
+Create a modern full-stack web application called **MotoVault**.
+
+The app is a digital garage for motorcycle enthusiasts where users can manage their motorcycles, track maintenance, modifications, expenses, and optionally link motorcycles to NFTs.
+
+Tech stack:
+
+* Frontend: React with TypeScript
+* Styling: TailwindCSS with a clean modern dark UI
+* Backend: Node.js with Express (or C# .NET API if preferred)
+* Database: PostgreSQL
+* Authentication: JWT-based login and registration
+* Web3: Optional wallet connection with MetaMask using ethers.js
+
+Core features:
+
+1. User Accounts
+
+* Register and login
+* Profile page
+* Each user has a personal digital garage
+
+2. Motorcycle Garage
+   Users can add motorcycles with:
+
+* brand
+* model
+* year
+* engine size
+* mileage
+* photos
+* description
+
+Each motorcycle has its own page.
+
+3. Maintenance Tracking
+   Users can log maintenance events such as:
+
+* oil change
+* tire replacement
+* chain maintenance
+* inspections
+
+Each entry includes:
+
+* date
+* mileage
+* cost
+* notes
+
+Show maintenance history as a timeline.
+
+4. Modifications
+   Users can track custom modifications:
+
+* exhaust
+* suspension
+* electronics
+* cosmetic mods
+
+Each mod includes:
+
+* price
+* install date
+* description
+* photo
+
+5. Expense Tracking
+   Show total motorcycle expenses including:
+
+* maintenance
+* modifications
+* fuel
+* insurance
+
+Display charts and summaries.
+
+6. NFT Integration (optional but supported)
+   Allow users to connect a MetaMask wallet.
+   If a motorcycle has an associated NFT:
+
+* store NFT contract address
+* store token ID
+* display NFT metadata and image.
+
+7. Dashboard
+   After login users see:
+
+* number of motorcycles
+* total money spent
+* upcoming maintenance
+* recent activity
+
+8. UI/UX
+   Design should be modern and clean:
+
+* dark theme
+* motorcycle enthusiast style
+* responsive layout
+* sidebar navigation
+
+Pages needed:
+
+* landing page
+* login/register
+* dashboard
+* garage (list of motorcycles)
+* motorcycle details
+* add maintenance
+* add modification
+* expenses analytics
+
+9. Bonus features
+
+* image upload
+* search and filter motorcycles
+* maintenance reminders
+* ability to export motorcycle history as PDF
+
+The code should be well structured with clear folders for:
+frontend, backend, components, services, and database models.
+
+Focus on a professional UI and maintainable architecture.
