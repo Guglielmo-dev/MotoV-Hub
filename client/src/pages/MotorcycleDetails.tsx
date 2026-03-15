@@ -7,9 +7,10 @@ import { ConnectWallet } from "@/components/web3/ConnectWallet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { ArrowLeft, Wrench, Settings, Trash2, Plus, PenTool, Link as LinkIcon, ShieldAlert, FileText } from "lucide-react";
+import { ArrowLeft, Wrench, Settings, Trash2, Plus, PenTool, Link as LinkIcon, ShieldAlert, FileText, Camera } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { ImageUploadField } from "@/components/ui/ImageUploadField";
 
 export function MotorcycleDetails() {
   const [, params] = useRoute("/garage/:id");
@@ -37,6 +38,8 @@ export function MotorcycleDetails() {
   const [isModOpen, setIsModOpen] = useState(false);
   const [isDocOpen, setIsDocOpen] = useState(false);
   const [isHistoricalOpen, setIsHistoricalOpen] = useState(false);
+  const [isPhotoEditOpen, setIsPhotoEditOpen] = useState(false);
+  const [newPhotoUrl, setNewPhotoUrl] = useState('');
   const [docLoading, setDocLoading] = useState(false);
   const [historicalForm, setHistoricalForm] = useState({ title: '', date: '', mileage: 0, cost: '', notes: '' });
 
@@ -88,8 +91,31 @@ export function MotorcycleDetails() {
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Garage
       </Link>
 
+      {/* Photo Edit Dialog */}
+      <Dialog open={isPhotoEditOpen} onOpenChange={open => { if (!open) { setIsPhotoEditOpen(false); setNewPhotoUrl(''); } }}>
+        <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display uppercase text-primary border-b border-white/10 pb-4">Change Motorcycle Photo</DialogTitle>
+          </DialogHeader>
+          <div className="pt-4 space-y-4">
+            <ImageUploadField label="New Photo" value={newPhotoUrl} onChange={setNewPhotoUrl} />
+            <button
+              onClick={() => {
+                updateBike({ id, photos: newPhotoUrl }, {
+                  onSuccess: () => { setIsPhotoEditOpen(false); setNewPhotoUrl(''); }
+                });
+              }}
+              disabled={!newPhotoUrl}
+              className="w-full py-3 bg-primary text-black rounded-xl font-bold hover:bg-primary/90 transition-colors disabled:opacity-40"
+            >
+              Save Photo
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="relative rounded-3xl overflow-hidden glass-panel border border-white/10">
-        <div className="h-64 sm:h-80 w-full relative">
+        <div className="h-64 sm:h-80 w-full relative group">
           {bike.photos ? (
             <img src={bike.photos} alt={bike.model} className="w-full h-full object-cover" />
           ) : (
@@ -98,6 +124,15 @@ export function MotorcycleDetails() {
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          {/* Camera button overlay */}
+          <button
+            data-testid="button-edit-hero-photo"
+            onClick={() => { setNewPhotoUrl(bike.photos || ''); setIsPhotoEditOpen(true); }}
+            className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary hover:text-black text-sm font-medium"
+          >
+            <Camera className="w-4 h-4" />
+            {bike.photos ? 'Change Photo' : 'Add Photo'}
+          </button>
           
           <div className="absolute bottom-0 left-0 p-6 sm:p-8 w-full flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
