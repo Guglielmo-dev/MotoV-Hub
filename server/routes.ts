@@ -1,3 +1,4 @@
+import express from "express";
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -5,6 +6,21 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const diskStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${unique}${path.extname(file.originalname)}`);
+  }
+});
+const upload = multer({ storage: diskStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 const SessionStore = MemoryStore(session);
 
@@ -31,6 +47,16 @@ export async function registerRoutes(
     }
     next();
   };
+
+  // Serve uploaded files statically
+  app.use("/uploads", express.static(uploadDir));
+
+  // Image upload endpoint
+  app.post("/api/upload", requireAuth, upload.single("image"), (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const url = `/uploads/${req.file.filename}`;
+    res.json({ url });
+  });
 
   // Auth Routes
   app.post(api.auth.register.path, async (req, res) => {

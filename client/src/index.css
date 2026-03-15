@@ -9,43 +9,43 @@
     --font-sans: 'Inter', sans-serif;
     --font-display: 'Rajdhani', sans-serif;
 
-    /* Base Dark Theme - MotoV is inherently dark and sleek */
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
+    /* Base Dark Theme - KawaCoder: Black & Kawasaki Green */
+    --background: 0 0% 3%;
+    --foreground: 0 0% 97%;
 
-    --card: 240 10% 6%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 97%;
 
-    --popover: 240 10% 6%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 97%;
 
-    /* Aggressive Crimson/Ducati Red for Primary */
-    --primary: 348 83% 47%;
+    /* Kawasaki Green Primary */
+    --primary: 142 100% 35%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 10% 12%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 97%;
 
-    --muted: 240 10% 12%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 348 83% 47%;
+    --accent: 142 100% 35%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 10% 12%;
-    --input: 240 10% 12%;
-    --ring: 348 83% 47%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 142 100% 35%;
 
     --radius: 0.5rem;
 
-    --chart-1: 348 83% 47%;
-    --chart-2: 240 10% 25%;
-    --chart-3: 240 10% 45%;
-    --chart-4: 240 10% 65%;
-    --chart-5: 240 10% 85%;
+    --chart-1: 142 100% 35%;
+    --chart-2: 142 70% 22%;
+    --chart-3: 0 0% 30%;
+    --chart-4: 0 0% 50%;
+    --chart-5: 0 0% 70%;
   }
 
   body {
@@ -65,6 +65,6 @@
   }
   
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-orange-500;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-400;
   }
 }
