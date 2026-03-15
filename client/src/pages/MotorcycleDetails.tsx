@@ -191,7 +191,7 @@ export function MotorcycleDetails() {
                   }} className="space-y-4">
                     <input required value={maintForm.title} onChange={e=>setMaintForm({...maintForm,title:e.target.value})} placeholder="Service Title (e.g. Oil Change)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                     <div className="grid grid-cols-2 gap-4">
-                      <input required type="date" value={maintForm.date} onChange={e=>setMaintForm({...maintForm,date:e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                      <input required type="text" value={maintForm.date} onChange={e=>setMaintForm({...maintForm,date:e.target.value})} placeholder="YYYY-MM-DD" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                       <input required type="number" value={maintForm.cost} onChange={e=>setMaintForm({...maintForm,cost:Number(e.target.value)})} placeholder="Cost ($)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                     </div>
                     <input required type="number" value={maintForm.mileage} onChange={e=>setMaintForm({...maintForm,mileage:Number(e.target.value)})} placeholder="Mileage at service" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
@@ -247,7 +247,7 @@ export function MotorcycleDetails() {
                   }} className="space-y-4">
                     <input required value={modForm.title} onChange={e=>setModForm({...modForm,title:e.target.value})} placeholder="Modification (e.g. Akrapovic Exhaust)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                     <div className="grid grid-cols-2 gap-4">
-                      <input required type="date" value={modForm.installDate} onChange={e=>setModForm({...modForm,installDate:e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                      <input required type="text" value={modForm.installDate} onChange={e=>setModForm({...modForm,installDate:e.target.value})} placeholder="YYYY-MM-DD" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                       <input required type="number" value={modForm.price} onChange={e=>setModForm({...modForm,price:Number(e.target.value)})} placeholder="Price ($)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                     </div>
                     <textarea value={modForm.description} onChange={e=>setModForm({...modForm,description:e.target.value})} placeholder="Description (Optional)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 h-24" />
@@ -312,7 +312,7 @@ export function MotorcycleDetails() {
                     <form onSubmit={handleAddHistorical} className="space-y-4">
                       <input required value={historicalForm.title} onChange={e=>setHistoricalForm({...historicalForm,title:e.target.value})} placeholder="Service Title (e.g. Oil Change)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                       <div className="grid grid-cols-2 gap-4">
-                        <input required type="date" value={historicalForm.date} onChange={e=>setHistoricalForm({...historicalForm,date:e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                        <input required type="text" value={historicalForm.date} onChange={e=>setHistoricalForm({...historicalForm,date:e.target.value})} placeholder="YYYY-MM-DD" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                         <input type="number" value={historicalForm.cost} onChange={e=>setHistoricalForm({...historicalForm,cost:e.target.value})} placeholder="Cost (optional)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                       </div>
                       <input required type="number" value={historicalForm.mileage} onChange={e=>setHistoricalForm({...historicalForm,mileage:Number(e.target.value)})} placeholder="Mileage at service" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
@@ -337,7 +337,7 @@ export function MotorcycleDetails() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Registration Date</label>
-                        <input required type="date" value={docForm.registrationDate} onChange={e=>setDocForm({...docForm,registrationDate:e.target.value})} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                        <input required type="text" value={docForm.registrationDate} onChange={e=>setDocForm({...docForm,registrationDate:e.target.value})} placeholder="YYYY-MM-DD" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Initial Mileage</label>

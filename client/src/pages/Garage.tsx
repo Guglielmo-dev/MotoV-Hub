@@ -162,7 +162,7 @@ export function Garage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Registration Date</label>
-                  <input type="date" required value={regData.registrationDate} onChange={e => setRegData({...regData, registrationDate: e.target.value})} className={inputCls} />
+                  <input type="text" required value={regData.registrationDate} onChange={e => setRegData({...regData, registrationDate: e.target.value})} className={inputCls} placeholder="YYYY-MM-DD" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Document URL (Optional)</label>

@@ -16,13 +16,15 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
-      
+
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-card/90 backdrop-blur-md border-b border-white/5 z-40 flex items-center justify-between px-4">
-        <h1 className="text-2xl font-bold font-display flex items-center gap-2">
-          <Bike className="w-5 h-5 text-primary" />
-          MOTO<span className="text-primary">V</span>
-        </h1>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Bike className="w-4 h-4 text-black" />
+          </div>
+          <h1 className="text-xl font-bold font-display">MOTO<span className="text-primary">VAULT</span></h1>
+        </div>
         <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 text-muted-foreground hover:text-white">
           {mobileOpen ? <X /> : <Menu />}
         </button>
@@ -42,11 +44,25 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 md:ml-64 pt-16 md:pt-0 min-h-screen">
-        <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+      {/* Main Content + Footer */}
+      <main className="flex-1 md:ml-64 pt-16 md:pt-0 min-h-screen flex flex-col">
+        <div className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
           {children}
         </div>
+
+        {/* Footer */}
+        <footer className="md:ml-0 border-t border-white/5 py-6 px-8 mt-12">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground font-mono">
+            <span className="text-primary/80 font-semibold tracking-wider uppercase">
+              Developed by KawaCoder
+            </span>
+            <p className="text-center sm:text-right leading-relaxed">
+              All motorcycle brands mentioned are trademarks of their respective owners.
+              <br />
+              This project is an independent developer portfolio project.
+            </p>
+          </div>
+        </footer>
       </main>
     </div>
   );

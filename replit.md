@@ -12,13 +12,15 @@ A full-stack motorcycle management web app. Dark-themed, motorcycle enthusiast a
 
 ## Features
 
-- **Auth**: Register / Login / Logout (session-based)
+- **Auth**: Register / Login / Logout (session-based) — motorcycle rev sound plays on success
 - **Garage**: CRUD motorcycle cards with direct image upload (drag & drop or click)
 - **Photo Edit**: Camera icon overlay on card hover and on detail hero — opens change photo dialog
-- **Brand Theme System**: Configurable color theme in sidebar (Kawasaki green, Ducati red, BMW blue, Honda red, Yamaha blue, Harley orange) — persisted in localStorage
+- **Brand Theme System**: Settings modal (gear icon in sidebar) with 6 brand themes (Kawasaki, Ducati, BMW, Honda, Yamaha, Harley) — persisted in localStorage
 - **Motorcycle Details**: Maintenance & modification history, registration document tab
 - **Dashboard**: Expense summary and recent activity
 - **Web3**: MetaMask wallet connect for NFT linking per motorcycle
+- **Footer**: KawaCoder branding + trademark disclaimer on all authenticated pages
+- **Date inputs**: All date fields use type="text" with YYYY-MM-DD placeholder (no right-to-left browser date behavior)
 
 ## Key Files
 

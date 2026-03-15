@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLogin } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { Bike, ArrowRight } from "lucide-react";
+import { playMotorcycleRevSound } from "@/lib/sound";
 
 export function Login() {
   const [username, setUsername] = useState("");
@@ -12,7 +13,10 @@ export function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     login({ username, password }, {
-      onSuccess: () => setLocation("/")
+      onSuccess: () => {
+        playMotorcycleRevSound();
+        setTimeout(() => setLocation("/"), 200);
+      }
     });
   };
 
@@ -25,7 +29,7 @@ export function Login() {
             <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
               <Bike className="w-7 h-7 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold font-display uppercase tracking-wider">MOTO<span className="text-primary">V</span></h1>
+            <h1 className="text-4xl font-bold font-display uppercase tracking-wider">MOTO<span className="text-primary">VAULT</span></h1>
           </div>
 
           <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
@@ -59,7 +63,7 @@ export function Login() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full py-3.5 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex justify-center items-center gap-2"
+              className="w-full py-3.5 px-4 bg-primary hover:bg-primary/90 text-black font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex justify-center items-center gap-2"
             >
               {isPending ? "Starting Engine..." : "Sign In"}
               {!isPending && <ArrowRight className="w-5 h-5" />}
@@ -76,7 +80,6 @@ export function Login() {
       {/* Right side image */}
       <div className="hidden lg:block lg:w-1/2 relative border-l border-white/5">
         <div className="absolute inset-0 bg-gradient-to-r from-background to-transparent z-10" />
-        {/* landing page hero dark motorcycle night ride */}
         <img
           src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=2070&auto=format&fit=crop"
           alt="Motorcycle at night"

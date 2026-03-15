@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRegister } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { Bike, ArrowRight } from "lucide-react";
+import { playMotorcycleRevSound } from "@/lib/sound";
 
 export function Register() {
   const [username, setUsername] = useState("");
@@ -12,7 +13,10 @@ export function Register() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     register({ username, password }, {
-      onSuccess: () => setLocation("/")
+      onSuccess: () => {
+        playMotorcycleRevSound();
+        setTimeout(() => setLocation("/"), 200);
+      }
     });
   };
 
@@ -21,7 +25,6 @@ export function Register() {
       {/* Left side image */}
       <div className="hidden lg:block lg:w-1/2 relative border-r border-white/5">
         <div className="absolute inset-0 bg-gradient-to-l from-background to-transparent z-10" />
-        {/* registering page sport bike garage mechanic */}
         <img
           src="https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?q=80&w=2070&auto=format&fit=crop"
           alt="Motorcycle in garage"
@@ -33,7 +36,7 @@ export function Register() {
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 sm:px-16 xl:px-24 z-10">
         <div className="max-w-md w-full mx-auto">
           <div className="flex items-center gap-3 mb-12 lg:justify-end">
-            <h1 className="text-4xl font-bold font-display uppercase tracking-wider">MOTO<span className="text-primary">V</span></h1>
+            <h1 className="text-4xl font-bold font-display uppercase tracking-wider">MOTO<span className="text-primary">VAULT</span></h1>
             <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
               <Bike className="w-7 h-7 text-primary" />
             </div>
@@ -72,7 +75,7 @@ export function Register() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full py-3.5 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex justify-center items-center gap-2"
+              className="w-full py-3.5 px-4 bg-primary hover:bg-primary/90 text-black font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex justify-center items-center gap-2"
             >
               {isPending ? "Creating Profile..." : "Create Account"}
               {!isPending && <ArrowRight className="w-5 h-5" />}
