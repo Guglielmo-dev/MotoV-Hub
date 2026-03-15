@@ -1,3 +1,5 @@
+const AUDIO_STORAGE_KEY = 'motovault-login-audio';
+
 function makeDistortionCurve(amount: number): Float32Array {
   const samples = 256;
   const curve = new Float32Array(samples);
@@ -8,10 +10,9 @@ function makeDistortionCurve(amount: number): Float32Array {
   return curve;
 }
 
-export function playMotorcycleRevSound() {
+function playDefaultSynth() {
   try {
     const ctx = new AudioContext();
-
     const gainMaster = ctx.createGain();
     gainMaster.gain.setValueAtTime(0, ctx.currentTime);
     gainMaster.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.08);
@@ -24,7 +25,6 @@ export function playMotorcycleRevSound() {
     distortion.curve = makeDistortionCurve(280);
     distortion.oversample = '4x';
 
-    // Low engine body
     const osc1 = ctx.createOscillator();
     osc1.type = 'sawtooth';
     osc1.frequency.setValueAtTime(75, ctx.currentTime);
@@ -33,7 +33,6 @@ export function playMotorcycleRevSound() {
     osc1.frequency.exponentialRampToValueAtTime(95, ctx.currentTime + 1.1);
     osc1.frequency.linearRampToValueAtTime(82, ctx.currentTime + 1.8);
 
-    // Sub-harmonic for depth
     const osc2 = ctx.createOscillator();
     osc2.type = 'square';
     osc2.frequency.setValueAtTime(38, ctx.currentTime);
@@ -44,7 +43,6 @@ export function playMotorcycleRevSound() {
     const osc2Gain = ctx.createGain();
     osc2Gain.gain.setValueAtTime(0.4, ctx.currentTime);
 
-    // High crackle
     const osc3 = ctx.createOscillator();
     osc3.type = 'sawtooth';
     osc3.frequency.setValueAtTime(160, ctx.currentTime);
@@ -69,9 +67,48 @@ export function playMotorcycleRevSound() {
     osc2.start(t); osc2.stop(t + 1.9);
     osc3.start(t); osc3.stop(t + 1.9);
 
-    // Auto-close context after sound ends
     setTimeout(() => ctx.close(), 2200);
   } catch {
-    // Silently fail if AudioContext not supported
+    // Silently fail
   }
+}
+
+export function playMotorcycleRevSound() {
+  const customAudio = localStorage.getItem(AUDIO_STORAGE_KEY);
+  if (customAudio) {
+    try {
+      const audio = new Audio(customAudio);
+      audio.volume = 0.8;
+      audio.play().catch(() => playDefaultSynth());
+      return;
+    } catch {
+      // fall through to default
+    }
+  }
+  playDefaultSynth();
+}
+
+export function setCustomLoginAudio(dataUrl: string) {
+  localStorage.setItem(AUDIO_STORAGE_KEY, dataUrl);
+}
+
+export function removeCustomLoginAudio() {
+  localStorage.removeItem(AUDIO_STORAGE_KEY);
+}
+
+export function getCustomLoginAudioName(): string | null {
+  const nameKey = AUDIO_STORAGE_KEY + '-name';
+  return localStorage.getItem(nameKey);
+}
+
+export function setCustomLoginAudioName(name: string) {
+  localStorage.setItem(AUDIO_STORAGE_KEY + '-name', name);
+}
+
+export function removeCustomLoginAudioName() {
+  localStorage.removeItem(AUDIO_STORAGE_KEY + '-name');
+}
+
+export function hasCustomLoginAudio(): boolean {
+  return !!localStorage.getItem(AUDIO_STORAGE_KEY);
 }
