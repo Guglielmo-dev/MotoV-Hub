@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Bike, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Bike, LogOut, ChevronLeft, ChevronRight, Users, BookOpen } from "lucide-react";
 import { useLogout } from "@/hooks/use-auth";
 import { useTheme } from "@/context/ThemeContext";
 import { SettingsTrigger } from "@/components/SettingsModal";
@@ -15,8 +15,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { theme } = useTheme();
 
   const links = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/garage", label: "Garage", icon: Bike },
+    { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { href: "/garage", label: "Garage", icon: Bike, exact: false },
+    { href: "/community", label: "Community", icon: Users, exact: false },
+    { href: "/travel", label: "Travel Diary", icon: BookOpen, exact: false },
   ];
 
   return (
@@ -34,8 +36,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             MOTO<span className="text-primary">VAULT</span>
           </span>
         )}
-
-        {/* Toggle button */}
         <button
           data-testid="button-sidebar-toggle"
           onClick={onToggle}
@@ -49,7 +49,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Nav */}
       <nav className={`flex-1 py-4 space-y-1 ${collapsed ? 'px-2' : 'px-3'}`}>
         {links.map((link) => {
-          const isActive = location === link.href || (link.href !== '/' && location.startsWith(link.href));
+          const isActive = link.exact ? location === link.href : location === link.href || location.startsWith(link.href + '/') || (link.href !== '/' && location.startsWith(link.href));
           return (
             <Link
               key={link.href}
@@ -71,10 +71,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         })}
       </nav>
 
-      {/* Bottom actions */}
+      {/* Bottom */}
       <div className={`pb-3 border-t border-white/5 pt-3 space-y-1 ${collapsed ? 'px-2' : 'px-3'}`}>
         <SettingsTrigger collapsed={collapsed} />
-
         <button
           onClick={() => logout()}
           disabled={isPending}

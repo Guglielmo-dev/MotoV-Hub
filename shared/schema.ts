@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, numeric, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -49,53 +49,87 @@ export const modifications = pgTable("modifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const communityPosts = pgTable("community_posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  imageUrl: text("image_url"),
+  category: text("category").notNull().default('general'),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const communityComments = pgTable("community_comments", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const communityLikes = pgTable("community_likes", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id").notNull(),
+});
+
+export const travelLogs = pgTable("travel_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  location: text("location").notNull(),
+  visitDate: text("visit_date").notNull(),
+  description: text("description").notNull(),
+  highlights: text("highlights"),
+  imageUrl: text("image_url"),
+  isUpcoming: boolean("is_upcoming").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   motorcycles: many(motorcycles),
+  communityPosts: many(communityPosts),
+  communityComments: many(communityComments),
+  travelLogs: many(travelLogs),
 }));
 
 export const motorcyclesRelations = relations(motorcycles, ({ one, many }) => ({
-  user: one(users, {
-    fields: [motorcycles.userId],
-    references: [users.id],
-  }),
+  user: one(users, { fields: [motorcycles.userId], references: [users.id] }),
   maintenance: many(maintenance),
   modifications: many(modifications),
 }));
 
 export const maintenanceRelations = relations(maintenance, ({ one }) => ({
-  motorcycle: one(motorcycles, {
-    fields: [maintenance.motorcycleId],
-    references: [motorcycles.id],
-  }),
+  motorcycle: one(motorcycles, { fields: [maintenance.motorcycleId], references: [motorcycles.id] }),
 }));
 
 export const modificationsRelations = relations(modifications, ({ one }) => ({
-  motorcycle: one(motorcycles, {
-    fields: [modifications.motorcycleId],
-    references: [motorcycles.id],
-  }),
+  motorcycle: one(motorcycles, { fields: [modifications.motorcycleId], references: [motorcycles.id] }),
 }));
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+export const communityPostsRelations = relations(communityPosts, ({ one, many }) => ({
+  user: one(users, { fields: [communityPosts.userId], references: [users.id] }),
+  comments: many(communityComments),
+  likes: many(communityLikes),
+}));
 
-export const insertMotorcycleSchema = createInsertSchema(motorcycles).omit({
-  id: true,
-  userId: true,
-  createdAt: true,
-});
+export const communityCommentsRelations = relations(communityComments, ({ one }) => ({
+  post: one(communityPosts, { fields: [communityComments.postId], references: [communityPosts.id] }),
+  user: one(users, { fields: [communityComments.userId], references: [users.id] }),
+}));
 
-export const insertMaintenanceSchema = createInsertSchema(maintenance).omit({
-  id: true,
-  createdAt: true,
-});
+export const travelLogsRelations = relations(travelLogs, ({ one }) => ({
+  user: one(users, { fields: [travelLogs.userId], references: [users.id] }),
+}));
 
-export const insertModificationSchema = createInsertSchema(modifications).omit({
-  id: true,
-  createdAt: true,
-});
+export const insertUserSchema = createInsertSchema(users).pick({ username: true, password: true });
+export const insertMotorcycleSchema = createInsertSchema(motorcycles).omit({ id: true, userId: true, createdAt: true });
+export const insertMaintenanceSchema = createInsertSchema(maintenance).omit({ id: true, createdAt: true });
+export const insertModificationSchema = createInsertSchema(modifications).omit({ id: true, createdAt: true });
+
+export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({ id: true, userId: true, createdAt: true });
+export const insertCommunityCommentSchema = createInsertSchema(communityComments).omit({ id: true, userId: true, createdAt: true });
+export const insertTravelLogSchema = createInsertSchema(travelLogs).omit({ id: true, userId: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -108,3 +142,14 @@ export type InsertMaintenance = z.infer<typeof insertMaintenanceSchema>;
 
 export type Modification = typeof modifications.$inferSelect;
 export type InsertModification = z.infer<typeof insertModificationSchema>;
+
+export type CommunityPost = typeof communityPosts.$inferSelect;
+export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
+
+export type CommunityComment = typeof communityComments.$inferSelect;
+export type InsertCommunityComment = z.infer<typeof insertCommunityCommentSchema>;
+
+export type CommunityLike = typeof communityLikes.$inferSelect;
+
+export type TravelLog = typeof travelLogs.$inferSelect;
+export type InsertTravelLog = z.infer<typeof insertTravelLogSchema>;

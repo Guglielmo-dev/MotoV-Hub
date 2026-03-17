@@ -23,6 +23,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   const closeMenu = () => setMobileOpen(false);
   const sidebarWidth = collapsed ? 64 : 256;
 
+  const mobileLinks = [
+    { href: '/', label: 'Dashboard' },
+    { href: '/garage', label: 'Garage' },
+    { href: '/community', label: 'Community' },
+    { href: '/travel', label: 'Travel Diary' },
+  ];
+
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar collapsed={collapsed} onToggle={toggleSidebar} />
@@ -43,13 +50,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 bg-background/95 backdrop-blur-sm z-30 pt-20 px-4">
-          <nav className="flex flex-col space-y-4">
-            <Link href="/" onClick={closeMenu} className={`p-4 rounded-xl text-lg font-medium ${location === '/' ? 'bg-primary/20 text-primary' : 'text-foreground bg-card'}`}>
-              Dashboard
-            </Link>
-            <Link href="/garage" onClick={closeMenu} className={`p-4 rounded-xl text-lg font-medium ${location.startsWith('/garage') ? 'bg-primary/20 text-primary' : 'text-foreground bg-card'}`}>
-              Garage
-            </Link>
+          <nav className="flex flex-col space-y-3">
+            {mobileLinks.map(link => (
+              <Link key={link.href} href={link.href} onClick={closeMenu}
+                className={`p-4 rounded-xl text-lg font-medium ${location === link.href || (link.href !== '/' && location.startsWith(link.href)) ? 'bg-primary/20 text-primary' : 'text-foreground bg-card'}`}>
+                {link.label}
+              </Link>
+            ))}
           </nav>
         </div>
       )}
@@ -63,16 +70,12 @@ export function AppLayout({ children }: AppLayoutProps) {
           {children}
         </div>
 
-        {/* Footer */}
         <footer className="border-t border-white/5 py-6 px-8 mt-12">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground font-mono">
-            <span className="text-primary/80 font-semibold tracking-wider uppercase">
-              Developed by KawaCoder
-            </span>
+            <span className="text-primary/80 font-semibold tracking-wider uppercase">Developed by KawaCoder</span>
             <p className="text-center sm:text-right leading-relaxed">
               All motorcycle brands mentioned are trademarks of their respective owners.
-              <br />
-              This project is an independent developer portfolio project.
+              <br />This project is an independent developer portfolio project.
             </p>
           </div>
         </footer>

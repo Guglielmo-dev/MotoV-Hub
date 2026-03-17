@@ -19,6 +19,8 @@ A full-stack motorcycle management web app. Dark-themed, motorcycle enthusiast a
 - **Motorcycle Details**: Maintenance & modification history, registration document tab
 - **Dashboard**: Expense summary and recent activity
 - **Web3**: MetaMask wallet connect for NFT linking per motorcycle
+- **Community**: Reddit-style community board — post threads with categories (Advice, Rides, Gear, Meetup, Show Off, General), image upload, likes, comments, delete own posts/comments
+- **Travel Diary**: Personal ride journal — log past adventures and upcoming trips with location, date, diary entry, highlights (food/sights/tips), photos; card grid sorted by upcoming vs past
 - **Footer**: KawaCoder branding + trademark disclaimer on all authenticated pages
 - **Date inputs**: All date fields use type="text" with YYYY-MM-DD placeholder (no right-to-left browser date behavior)
 

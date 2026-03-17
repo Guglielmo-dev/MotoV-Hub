@@ -350,5 +350,96 @@ export async function registerRoutes(
     }
   });
 
+  // ── Community Routes ──────────────────────────────────────────────────────
+
+  app.get('/api/community/posts', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    const posts = await storage.getCommunityPosts(userId);
+    res.json(posts);
+  });
+
+  app.post('/api/community/posts', requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const { title, content, imageUrl, category } = req.body;
+      if (!title || !content) return res.status(400).json({ message: 'Title and content required' });
+      const post = await storage.createCommunityPost(userId, { title, content, imageUrl: imageUrl || null, category: category || 'general' });
+      const withMeta = await storage.getCommunityPost(post.id, userId);
+      res.status(201).json(withMeta);
+    } catch {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/community/posts/:id', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    await storage.deleteCommunityPost(Number(req.params.id), userId);
+    res.status(204).send();
+  });
+
+  app.get('/api/community/posts/:id/comments', requireAuth, async (req, res) => {
+    const comments = await storage.getCommunityComments(Number(req.params.id));
+    res.json(comments);
+  });
+
+  app.post('/api/community/posts/:id/comments', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ message: 'Content required' });
+    const comment = await storage.createCommunityComment(Number(req.params.id), userId, content);
+    res.status(201).json(comment);
+  });
+
+  app.delete('/api/community/comments/:id', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    await storage.deleteCommunityComment(Number(req.params.id), userId);
+    res.status(204).send();
+  });
+
+  app.post('/api/community/posts/:id/like', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    const result = await storage.toggleCommunityLike(Number(req.params.id), userId);
+    res.json(result);
+  });
+
+  // ── Travel Log Routes ─────────────────────────────────────────────────────
+
+  app.get('/api/travel', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    const logs = await storage.getTravelLogs(userId);
+    res.json(logs);
+  });
+
+  app.post('/api/travel', requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const { title, location, visitDate, description, highlights, imageUrl, isUpcoming } = req.body;
+      if (!title || !location || !visitDate || !description) {
+        return res.status(400).json({ message: 'Title, location, date and description required' });
+      }
+      const log = await storage.createTravelLog(userId, { title, location, visitDate, description, highlights: highlights || null, imageUrl: imageUrl || null, isUpcoming: !!isUpcoming });
+      res.status(201).json(log);
+    } catch {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/travel/:id', requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const { title, location, visitDate, description, highlights, imageUrl, isUpcoming } = req.body;
+      const log = await storage.updateTravelLog(Number(req.params.id), userId, { title, location, visitDate, description, highlights, imageUrl, isUpcoming: !!isUpcoming });
+      res.json(log);
+    } catch {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/travel/:id', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    await storage.deleteTravelLog(Number(req.params.id), userId);
+    res.status(204).send();
+  });
+
   return httpServer;
 }
