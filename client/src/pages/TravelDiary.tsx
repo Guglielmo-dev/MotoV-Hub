@@ -7,6 +7,7 @@ import {
   MapPin, Calendar, Plus, Trash2, Edit3, X, BookOpen,
   ChevronRight, Utensils, Camera, Star, Navigation
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 interface TravelLog {
   id: number;
@@ -130,10 +131,7 @@ function TravelFormDialog({
             </div>
             <div>
               <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Date *</label>
-              <input required type="text" value={form.visitDate} onChange={e => set('visitDate', e.target.value)}
-                placeholder="YYYY-MM-DD"
-                className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50"
-                data-testid="input-travel-date" />
+              <DatePicker value={form.visitDate} onChange={val => set('visitDate', val)} placeholder="Select trip date" />
             </div>
           </div>
 

@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { Plus, Bike, Calendar, Settings2, FileText, Camera } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ImageUploadField } from "@/components/ui/ImageUploadField";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 export function Garage() {
   const { data: motorcycles, isLoading } = useMotorcycles();
@@ -162,7 +163,7 @@ export function Garage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Registration Date</label>
-                  <input type="text" required value={regData.registrationDate} onChange={e => setRegData({...regData, registrationDate: e.target.value})} className={inputCls} placeholder="YYYY-MM-DD" />
+                  <DatePicker value={regData.registrationDate} onChange={val => setRegData({...regData, registrationDate: val})} placeholder="Select registration date" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Document URL (Optional)</label>

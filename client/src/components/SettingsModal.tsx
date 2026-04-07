@@ -1,13 +1,14 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Settings, Check, Upload, X, Volume2, Music } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Settings, Check, Upload, X, Volume2, Music, VolumeX } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { BRAND_THEMES, BRAND_COLORS, type BrandId } from "@/lib/themes";
 import {
   setCustomLoginAudio, removeCustomLoginAudio,
   setCustomLoginAudioName, removeCustomLoginAudioName,
   getCustomLoginAudioName, hasCustomLoginAudio,
-  playMotorcycleRevSound,
+  playMotorcycleRevSound, isAudioEnabled, setAudioEnabled,
 } from "@/lib/sound";
 
 interface SettingsModalProps {
@@ -21,6 +22,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [customAudioName, setCustomAudioName] = useState<string | null>(getCustomLoginAudioName);
   const [hasCustom, setHasCustom] = useState(hasCustomLoginAudio);
   const [uploading, setUploading] = useState(false);
+  const [audioOn, setAudioOn] = useState(isAudioEnabled);
+
+  const handleToggleAudio = (enabled: boolean) => {
+    setAudioEnabled(enabled);
+    setAudioOn(enabled);
+  };
 
   const handleAudioFile = (file: File) => {
     if (!file.type.startsWith('audio/')) return;
@@ -95,74 +102,95 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
 
           {/* Login Sound */}
           <div className="border-t border-white/5 pt-6">
-            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-1">Login Sound</h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Login Sound</h3>
+              <div className="flex items-center gap-2.5">
+                {audioOn
+                  ? <Volume2 className="w-3.5 h-3.5 text-primary" />
+                  : <VolumeX className="w-3.5 h-3.5 text-muted-foreground" />
+                }
+                <Switch
+                  checked={audioOn}
+                  onCheckedChange={handleToggleAudio}
+                  data-testid="switch-audio-enabled"
+                />
+              </div>
+            </div>
             <p className="text-xs text-muted-foreground mb-4">
               Plays when you sign in or register. Upload your own audio to replace the default engine rev.
             </p>
 
-            {hasCustom ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
-                <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <Music className="w-4 h-4 text-primary" />
+            <div className={`space-y-3 transition-opacity duration-200 ${!audioOn ? 'opacity-40 pointer-events-none' : ''}`}>
+              {hasCustom ? (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                  <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <Music className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{customAudioName || 'Custom audio'}</p>
+                    <p className="text-xs text-muted-foreground">Custom audio active</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => playMotorcycleRevSound()}
+                      className="p-2 rounded-lg bg-card hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors"
+                      title="Preview"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={handleRemoveAudio}
+                      className="p-2 rounded-lg bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      title="Remove custom audio"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{customAudioName || 'Custom audio'}</p>
-                  <p className="text-xs text-muted-foreground">Custom audio active</p>
-                </div>
-                <div className="flex gap-2">
+              ) : (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-background border border-white/10">
+                  <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+                    <Volume2 className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">Default — Engine Rev</p>
+                    <p className="text-xs text-muted-foreground">Synthesized motorcycle sound</p>
+                  </div>
                   <button
                     onClick={() => playMotorcycleRevSound()}
                     className="p-2 rounded-lg bg-card hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors"
-                    title="Preview"
+                    title="Preview default"
                   >
                     <Volume2 className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={handleRemoveAudio}
-                    className="p-2 rounded-lg bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    title="Remove custom audio"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-background border border-white/10">
-                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                  <Volume2 className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">Default — Engine Rev</p>
-                  <p className="text-xs text-muted-foreground">Synthesized motorcycle sound</p>
-                </div>
-                <button
-                  onClick={() => playMotorcycleRevSound()}
-                  className="p-2 rounded-lg bg-card hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors"
-                  title="Preview default"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+              )}
 
-            <button
-              onClick={() => audioFileRef.current?.click()}
-              disabled={uploading}
-              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-white/20 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors text-sm disabled:opacity-50"
-            >
-              <Upload className="w-4 h-4" />
-              {uploading ? 'Processing...' : hasCustom ? 'Replace Audio' : 'Upload Audio File'}
-            </button>
-            <input
-              ref={audioFileRef}
-              type="file"
-              accept="audio/*"
-              className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleAudioFile(f); }}
-            />
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              Supports MP3, WAV, OGG, AAC — keep files small (&lt;2MB)
-            </p>
+              <button
+                onClick={() => audioFileRef.current?.click()}
+                disabled={uploading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-white/20 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors text-sm disabled:opacity-50"
+              >
+                <Upload className="w-4 h-4" />
+                {uploading ? 'Processing...' : hasCustom ? 'Replace Audio' : 'Upload Audio File'}
+              </button>
+              <input
+                ref={audioFileRef}
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleAudioFile(f); }}
+              />
+              <p className="text-xs text-muted-foreground text-center">
+                Supports MP3, WAV, OGG, AAC — keep files small (&lt;2MB)
+              </p>
+            </div>
+
+            {!audioOn && (
+              <p className="text-xs text-muted-foreground text-center mt-3 italic">
+                Sound is disabled — toggle the switch to re-enable
+              </p>
+            )}
           </div>
         </div>
       </DialogContent>

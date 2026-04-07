@@ -1,4 +1,14 @@
 const AUDIO_STORAGE_KEY = 'motovault-login-audio';
+const AUDIO_ENABLED_KEY = 'motovault-audio-enabled';
+
+export function isAudioEnabled(): boolean {
+  const val = localStorage.getItem(AUDIO_ENABLED_KEY);
+  return val === null ? true : val === 'true';
+}
+
+export function setAudioEnabled(enabled: boolean): void {
+  localStorage.setItem(AUDIO_ENABLED_KEY, String(enabled));
+}
 
 function makeDistortionCurve(amount: number): Float32Array {
   const samples = 256;
@@ -74,6 +84,7 @@ function playDefaultSynth() {
 }
 
 export function playMotorcycleRevSound() {
+  if (!isAudioEnabled()) return;
   const customAudio = localStorage.getItem(AUDIO_STORAGE_KEY);
   if (customAudio) {
     try {
