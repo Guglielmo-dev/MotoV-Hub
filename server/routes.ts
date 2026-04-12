@@ -5,10 +5,18 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
-import MemoryStore from "memorystore";
+import PgSessionStore from "connect-pg-simple";
+import { pool } from "./db";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import bcrypt from "bcrypt";
+import { rateLimit } from "express-rate-limit";
+import { 
+  insertCommunityPostSchema, 
+  insertCommunityCommentSchema, 
+  insertTravelLogSchema 
+} from "@shared/schema";
 
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -22,22 +30,48 @@ const diskStorage = multer.diskStorage({
 });
 const upload = multer({ storage: diskStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-const SessionStore = MemoryStore(session);
+const PostgresStore = PgSessionStore(session);
+
+// Rate Limiters
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per `window`
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Troppi tentativi, riprova tra 15 minuti" }
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, 
+  message: { message: "Troppe richieste" }
+});
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
   
+  // Enforce session secret
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    throw new Error("SESSION_SECRET non definita. Impostala nelle variabili d'ambiente.");
+  }
+
   // Set up basic session middleware for auth
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'moto-vault-secret',
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
-    store: new SessionStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
+    store: new PostgresStore({
+      pool,
+      createTableIfMissing: true,
+      tableName: 'session'
     }),
-    cookie: { secure: process.env.NODE_ENV === "production" }
+    cookie: { 
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    }
   }));
 
   // Helper middleware to check auth
@@ -52,22 +86,35 @@ export async function registerRoutes(
   app.use("/uploads", express.static(uploadDir));
 
   // Image upload endpoint
-  app.post("/api/upload", requireAuth, upload.single("image"), (req, res) => {
+  app.post("/api/upload", authLimiter, requireAuth, upload.single("image"), (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    
+    // MIME type validation
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedMimes.includes(req.file.mimetype)) {
+      return res.status(400).json({ message: "Formato file non supportato" });
+    }
+
     const url = `/uploads/${req.file.filename}`;
     res.json({ url });
   });
 
   // Auth Routes
-  app.post(api.auth.register.path, async (req, res) => {
+  app.post(api.auth.register.path, authLimiter, async (req, res) => {
     try {
       const input = api.auth.register.input.parse(req.body);
       const existingUser = await storage.getUserByUsername(input.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists", field: "username" });
       }
-      // Simple text password for demo, usually we'd hash this
-      const user = await storage.createUser(input);
+      
+      // Password Hashing (SICUREZZA 1)
+      const hashedPassword = await bcrypt.hash(input.password, 12);
+      const user = await storage.createUser({
+        ...input,
+        password: hashedPassword
+      });
+      
       (req.session as any).userId = user.id;
       res.status(201).json(user);
     } catch (err) {
@@ -79,13 +126,16 @@ export async function registerRoutes(
     }
   });
 
-  app.post(api.auth.login.path, async (req, res) => {
+  app.post(api.auth.login.path, authLimiter, async (req, res) => {
     try {
       const input = api.auth.login.input.parse(req.body);
       const user = await storage.getUserByUsername(input.username);
-      if (!user || user.password !== input.password) {
+      
+      // Secure Password Comparison (SICUREZZA 1)
+      if (!user || !(await bcrypt.compare(input.password, user.password))) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
+      
       (req.session as any).userId = user.id;
       res.status(200).json(user);
     } catch (err) {
@@ -199,6 +249,7 @@ export async function registerRoutes(
       const input = inputSchema.parse(req.body);
       const event = await storage.createMaintenanceEvent(motorcycleId, {
         ...input,
+        motorcycleId,
         cost: String(input.cost), // Store as string for numeric in pg
       });
       res.status(201).json(event);
@@ -242,6 +293,7 @@ export async function registerRoutes(
       const input = inputSchema.parse(req.body);
       const mod = await storage.createModification(motorcycleId, {
         ...input,
+        motorcycleId,
         price: String(input.price),
       });
       res.status(201).json(mod);
@@ -307,6 +359,7 @@ export async function registerRoutes(
           title: `Vehicle Registration - Initial Service Record`,
           date: input.registrationDate,
           mileage: input.initialMileage,
+          motorcycleId,
           cost: "0",
           notes: `Initial maintenance record created from registration document. Registered on ${input.registrationDate} with initial mileage of ${input.initialMileage} km.`,
         });
@@ -337,6 +390,7 @@ export async function registerRoutes(
         title: input.title,
         date: input.date,
         mileage: input.mileage,
+        motorcycleId,
         cost: input.cost || "0",
         notes: input.notes,
       });
@@ -361,13 +415,34 @@ export async function registerRoutes(
   app.post('/api/community/posts', requireAuth, async (req, res) => {
     try {
       const userId = (req.session as any).userId;
-      const { title, content, imageUrl, category } = req.body;
-      if (!title || !content) return res.status(400).json({ message: 'Title and content required' });
-      const post = await storage.createCommunityPost(userId, { title, content, imageUrl: imageUrl || null, category: category || 'general' });
+      const input = insertCommunityPostSchema.parse(req.body);
+      const post = await storage.createCommunityPost(userId, input);
       const withMeta = await storage.getCommunityPost(post.id, userId);
       res.status(201).json(withMeta);
-    } catch {
-      res.status(500).json({ message: 'Internal server error' });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.errors[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    }
+  });
+
+  app.patch('/api/community/posts/:id', requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const id = Number(req.params.id);
+      const input = insertCommunityPostSchema.partial().parse(req.body);
+      const post = await storage.updateCommunityPost(id, userId, input);
+      const withMeta = await storage.getCommunityPost(post.id, userId);
+      res.json(withMeta);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.errors[0].message });
+      } else {
+        const msg = err instanceof Error ? err.message : "Internal server error";
+        res.status(msg === "Post not found or unauthorized" ? 403 : 500).json({ message: msg });
+      }
     }
   });
 
@@ -383,11 +458,19 @@ export async function registerRoutes(
   });
 
   app.post('/api/community/posts/:id/comments', requireAuth, async (req, res) => {
-    const userId = (req.session as any).userId;
-    const { content } = req.body;
-    if (!content) return res.status(400).json({ message: 'Content required' });
-    const comment = await storage.createCommunityComment(Number(req.params.id), userId, content);
-    res.status(201).json(comment);
+    try {
+      const userId = (req.session as any).userId;
+      const postId = Number(req.params.id);
+      const input = insertCommunityCommentSchema.pick({ content: true }).parse(req.body);
+      const comment = await storage.createCommunityComment(postId, userId, input.content);
+      res.status(201).json(comment);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.errors[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    }
   });
 
   app.delete('/api/community/comments/:id', requireAuth, async (req, res) => {
@@ -413,25 +496,31 @@ export async function registerRoutes(
   app.post('/api/travel', requireAuth, async (req, res) => {
     try {
       const userId = (req.session as any).userId;
-      const { title, location, visitDate, description, highlights, imageUrl, isUpcoming } = req.body;
-      if (!title || !location || !visitDate || !description) {
-        return res.status(400).json({ message: 'Title, location, date and description required' });
-      }
-      const log = await storage.createTravelLog(userId, { title, location, visitDate, description, highlights: highlights || null, imageUrl: imageUrl || null, isUpcoming: !!isUpcoming });
+      const input = insertTravelLogSchema.parse(req.body);
+      const log = await storage.createTravelLog(userId, input);
       res.status(201).json(log);
-    } catch {
-      res.status(500).json({ message: 'Internal server error' });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.errors[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
     }
   });
 
   app.put('/api/travel/:id', requireAuth, async (req, res) => {
     try {
       const userId = (req.session as any).userId;
-      const { title, location, visitDate, description, highlights, imageUrl, isUpcoming } = req.body;
-      const log = await storage.updateTravelLog(Number(req.params.id), userId, { title, location, visitDate, description, highlights, imageUrl, isUpcoming: !!isUpcoming });
+      const id = Number(req.params.id);
+      const input = insertTravelLogSchema.partial().parse(req.body);
+      const log = await storage.updateTravelLog(id, userId, input);
       res.json(log);
-    } catch {
-      res.status(500).json({ message: 'Internal server error' });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.errors[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
     }
   });
 

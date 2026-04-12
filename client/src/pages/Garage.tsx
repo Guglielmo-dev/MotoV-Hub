@@ -84,7 +84,7 @@ export function Garage() {
               </button>
             </DialogTrigger>
             <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
+              <DialogHeader className="pr-8">
                 <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">New Motorcycle</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
@@ -133,7 +133,7 @@ export function Garage() {
               </button>
             </DialogTrigger>
             <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
+              <DialogHeader className="pr-8">
                 <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">Add from Registration Document</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleRegistrationSubmit} className="space-y-4 pt-4">
@@ -186,7 +186,7 @@ export function Garage() {
       {/* Change Photo Dialog */}
       <Dialog open={editingPhotoId !== null} onOpenChange={open => { if (!open) { setEditingPhotoId(null); setNewPhotoUrl(''); } }}>
         <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[420px]">
-          <DialogHeader>
+          <DialogHeader className="pr-8">
             <DialogTitle className="text-xl font-display uppercase text-primary border-b border-white/10 pb-4">Change Photo</DialogTitle>
           </DialogHeader>
           <div className="pt-4 space-y-4">

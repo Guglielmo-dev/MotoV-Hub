@@ -1,70 +1,87 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap');
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+@plugin "@tailwindcss/typography";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-display: "Rajdhani", sans-serif;
+
+  --color-background: hsl(0 0% 3%);
+  --color-foreground: hsl(0 0% 97%);
+
+  --color-card: hsl(0 0% 5%);
+  --color-card-foreground: hsl(0 0% 97%);
+  --color-card-border: hsl(0 0% 12%);
+
+  --color-popover: hsl(0 0% 5%);
+  --color-popover-foreground: hsl(0 0% 97%);
+  --color-popover-border: hsl(0 0% 12%);
+
+  --color-primary: hsl(142 100% 35%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-primary-border: hsl(142 100% 45%);
+
+  --color-secondary: hsl(0 0% 10%);
+  --color-secondary-foreground: hsl(0 0% 97%);
+
+  --color-muted: hsl(0 0% 10%);
+  --color-muted-foreground: hsl(0 0% 55%);
+
+  --color-accent: hsl(142 100% 35%);
+  --color-accent-foreground: hsl(0 0% 100%);
+
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+
+  --color-border: hsl(0 0% 12%);
+  --color-input: hsl(0 0% 12%);
+  --color-ring: hsl(142 100% 35%);
+
+  --radius-lg: .5625rem;
+  --radius-md: .375rem;
+  --radius-sm: .1875rem;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+}
 
 @layer base {
-  :root {
-    --font-sans: 'Inter', sans-serif;
-    --font-display: 'Rajdhani', sans-serif;
-
-    /* Base Dark Theme - KawaCoder: Black & Kawasaki Green */
-    --background: 0 0% 3%;
-    --foreground: 0 0% 97%;
-
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 97%;
-
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 0% 97%;
-
-    /* Kawasaki Green Primary */
-    --primary: 142 100% 35%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 97%;
-
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 55%;
-
-    --accent: 142 100% 35%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 12%;
-    --input: 0 0% 12%;
-    --ring: 142 100% 35%;
-
-    --radius: 0.5rem;
-
-    --chart-1: 142 100% 35%;
-    --chart-2: 142 70% 22%;
-    --chart-3: 0 0% 30%;
-    --chart-4: 0 0% 50%;
-    --chart-5: 0 0% 70%;
+  *, ::after, ::before, ::placeholder, ::selection {
+    border-color: var(--color-border);
   }
-
+  
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    @apply tracking-tight uppercase;
+    letter-spacing: -0.025em;
+    text-transform: uppercase;
   }
 }
 
-@layer utilities {
-  .glass-panel {
-    @apply bg-card/80 backdrop-blur-md border border-white/5;
-  }
-  
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-400;
-  }
+@utility glass-panel {
+  background-color: color-mix(in srgb, var(--color-card) 80%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@utility text-gradient {
+  background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(to right, var(--color-primary), #34d399); /* emerald-400 */
 }

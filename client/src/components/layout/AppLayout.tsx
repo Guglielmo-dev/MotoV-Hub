@@ -1,5 +1,5 @@
 import { Sidebar } from "./Sidebar";
-import { Bike, Menu, X } from "lucide-react";
+import { Bike, Menu, X, LayoutDashboard, Users, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -24,10 +24,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const sidebarWidth = collapsed ? 64 : 256;
 
   const mobileLinks = [
-    { href: '/', label: 'Dashboard' },
-    { href: '/garage', label: 'Garage' },
-    { href: '/community', label: 'Community' },
-    { href: '/travel', label: 'Travel Diary' },
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/garage', label: 'Garage', icon: Bike },
+    { href: '/community', label: 'Community', icon: Users },
+    { href: '/travel', label: 'Travel Diary', icon: BookOpen },
   ];
 
   return (
@@ -53,7 +53,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           <nav className="flex flex-col space-y-3">
             {mobileLinks.map(link => (
               <Link key={link.href} href={link.href} onClick={closeMenu}
-                className={`p-4 rounded-xl text-lg font-medium ${location === link.href || (link.href !== '/' && location.startsWith(link.href)) ? 'bg-primary/20 text-primary' : 'text-foreground bg-card'}`}>
+                className={`p-4 min-h-[48px] rounded-xl text-lg font-medium flex items-center gap-3 ${location === link.href || (link.href !== '/' && location.startsWith(link.href)) ? 'bg-primary/20 text-primary' : 'text-foreground bg-card'}`}>
+                <link.icon className="w-5 h-5 flex-shrink-0" />
                 {link.label}
               </Link>
             ))}
@@ -63,8 +64,9 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main Content + Footer */}
       <main
-        className="flex-1 pt-16 md:pt-0 min-h-screen flex flex-col transition-all duration-300"
-        style={{ marginLeft: `${sidebarWidth}px` }}
+        className={`flex-1 pt-16 md:pt-0 min-h-screen flex flex-col transition-all duration-300
+          ${collapsed ? 'md:ml-16' : 'md:ml-64'}
+        `}
       >
         <div className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
           {children}

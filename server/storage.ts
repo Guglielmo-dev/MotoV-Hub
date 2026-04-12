@@ -47,6 +47,7 @@ export interface IStorage {
   getCommunityPosts(currentUserId: number): Promise<CommunityPostWithMeta[]>;
   getCommunityPost(id: number, currentUserId: number): Promise<CommunityPostWithMeta | undefined>;
   createCommunityPost(userId: number, data: InsertCommunityPost): Promise<CommunityPost>;
+  updateCommunityPost(id: number, userId: number, data: Partial<InsertCommunityPost>): Promise<CommunityPost>;
   deleteCommunityPost(id: number, userId: number): Promise<void>;
 
   getCommunityComments(postId: number): Promise<CommentWithAuthor[]>;
@@ -163,6 +164,15 @@ export class DatabaseStorage implements IStorage {
   async createCommunityPost(userId: number, data: InsertCommunityPost): Promise<CommunityPost> {
     const [inserted] = await db.insert(communityPosts).values({ ...data, userId }).returning();
     return inserted;
+  }
+
+  async updateCommunityPost(id: number, userId: number, data: Partial<InsertCommunityPost>): Promise<CommunityPost> {
+    const [updated] = await db.update(communityPosts)
+      .set(data)
+      .where(and(eq(communityPosts.id, id), eq(communityPosts.userId, userId)))
+      .returning();
+    if (!updated) throw new Error("Post not found or unauthorized");
+    return updated;
   }
 
   async deleteCommunityPost(id: number, userId: number): Promise<void> {

@@ -4,6 +4,8 @@ import { useLogout } from "@/hooks/use-auth";
 import { useTheme } from "@/context/ThemeContext";
 import { SettingsTrigger } from "@/components/SettingsModal";
 
+import { prefetchPage, PageName } from "@/lib/route-prefetch";
+
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -14,11 +16,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { mutate: logout, isPending } = useLogout();
   const { theme } = useTheme();
 
-  const links = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { href: "/garage", label: "Garage", icon: Bike, exact: false },
-    { href: "/community", label: "Community", icon: Users, exact: false },
-    { href: "/travel", label: "Travel Diary", icon: BookOpen, exact: false },
+  const links: { href: string; label: string; icon: any; exact: boolean; page: PageName }[] = [
+    { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true, page: 'Dashboard' },
+    { href: "/garage", label: "Garage", icon: Bike, exact: false, page: 'Garage' },
+    { href: "/community", label: "Community", icon: Users, exact: false, page: 'Community' },
+    { href: "/travel", label: "Travel Diary", icon: BookOpen, exact: false, page: 'TravelDiary' },
   ];
 
   return (
@@ -40,9 +42,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           data-testid="button-sidebar-toggle"
           onClick={onToggle}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card border border-white/15 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-all z-10"
+          className="absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card border border-white/15 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-all z-10"
         >
-          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+          {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
         </button>
       </div>
 
@@ -55,6 +57,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               key={link.href}
               href={link.href}
               title={collapsed ? link.label : undefined}
+              onMouseEnter={() => prefetchPage(link.page)}
               className={`
                 flex items-center rounded-xl font-medium transition-all duration-200
                 ${collapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}

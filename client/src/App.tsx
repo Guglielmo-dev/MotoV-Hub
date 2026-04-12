@@ -4,19 +4,28 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/context/ThemeContext";
-
 import { AppLayout } from "@/components/layout/AppLayout";
+import { createLazyComponent, prefetchPage } from "@/lib/route-prefetch";
 
-import { Login } from "@/pages/Login";
-import { Register } from "@/pages/Register";
-import { Dashboard } from "@/pages/Dashboard";
-import { Garage } from "@/pages/Garage";
-import { MotorcycleDetails } from "@/pages/MotorcycleDetails";
-import { Community } from "@/pages/Community";
-import { TravelDiary } from "@/pages/TravelDiary";
+const Login = createLazyComponent("Login");
+const Register = createLazyComponent("Register");
+const Dashboard = createLazyComponent("Dashboard");
+const Garage = createLazyComponent("Garage");
+const MotorcycleDetails = createLazyComponent("MotorcycleDetails");
+const Community = createLazyComponent("Community");
+const TravelDiary = createLazyComponent("TravelDiary");
+
+const ContentLoader = () => (
+  <div className="w-full flex items-center justify-center py-20 animate-in fade-in duration-500">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground animate-pulse">Initializing Interface...</p>
+    </div>
+  </div>
+);
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { data: user, isLoading } = useAuth();
@@ -31,7 +40,9 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   return (
     <AppLayout>
-      <Component />
+      <Suspense fallback={<ContentLoader />}>
+        <Component />
+      </Suspense>
     </AppLayout>
   );
 }
@@ -47,7 +58,11 @@ function AuthRoute({ component: Component }: { component: React.ComponentType })
   if (isLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
   if (user) return null;
 
-  return <Component />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <Component />
+    </Suspense>
+  );
 }
 
 function Router() {
@@ -68,6 +83,17 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    // Quietly prefetch main pages after the app has mounted
+    const timer = setTimeout(() => {
+      prefetchPage('Dashboard');
+      prefetchPage('Garage');
+      prefetchPage('Community');
+      prefetchPage('TravelDiary');
+    }, 2000); // 2 seconds delay to avoid competing with initial load
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
