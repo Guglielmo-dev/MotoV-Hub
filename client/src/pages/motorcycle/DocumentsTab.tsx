@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { DatePicker as CustomDatePicker } from "@/components/ui/DatePicker";
+import { useTranslation } from "react-i18next";
 
 interface DocumentsTabProps {
   id: number;
@@ -16,6 +17,7 @@ export function DocumentsTab({ id, bike }: DocumentsTabProps) {
   const [docLoading, setDocLoading] = useState(false);
   const [docForm, setDocForm] = useState({ documentUrl: '', registrationDate: '', initialMileage: 0, createMaintenanceRecord: true });
   const [historicalForm, setHistoricalForm] = useState({ title: '', date: '', mileage: 0, cost: '', notes: '' });
+  const { t } = useTranslation();
 
   const handleUploadDocument = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,56 +51,56 @@ export function DocumentsTab({ id, bike }: DocumentsTabProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold font-display">Registration Documents & History</h3>
+        <h3 className="text-2xl font-bold font-display">{t('motorcycleDetails.documents')}</h3>
         <div className="flex gap-2">
           <Dialog open={isHistoricalOpen} onOpenChange={setIsHistoricalOpen}>
             <DialogTrigger asChild>
               <button className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-white/10 text-sm font-medium rounded-lg transition-colors border border-white/5">
-                <Plus className="w-4 h-4" /> Add Past Service
+                <Plus className="w-4 h-4" /> {t('motorcycleDetails.addMaintenance') || 'Add Past Service'}
               </button>
             </DialogTrigger>
             <DialogContent className="bg-card border-white/10 text-foreground">
-              <DialogHeader className="pr-8"><DialogTitle>Log Historical Service</DialogTitle></DialogHeader>
+              <DialogHeader className="pr-8"><DialogTitle>{t('motorcycleDetails.addMaintenance')}</DialogTitle></DialogHeader>
               <form onSubmit={handleAddHistorical} className="space-y-4">
-                <input required value={historicalForm.title} onChange={e=>setHistoricalForm({...historicalForm,title:e.target.value})} placeholder="Service Title (e.g. Oil Change)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                <input required value={historicalForm.title} onChange={e=>setHistoricalForm({...historicalForm,title:e.target.value})} placeholder={t('motorcycleDetails.title') + " (" + t('motorcycleDetails.titleExample') + ")"} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                 <div className="grid grid-cols-2 gap-4">
-                  <CustomDatePicker value={historicalForm.date} onChange={val => setHistoricalForm({...historicalForm, date: val})} placeholder="Select service date" />
-                  <input type="number" value={historicalForm.cost} onChange={e=>setHistoricalForm({...historicalForm,cost:e.target.value})} placeholder="Cost (optional)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                  <CustomDatePicker value={historicalForm.date} onChange={val => setHistoricalForm({...historicalForm, date: val})} placeholder={t('motorcycleDetails.date')} />
+                  <input type="number" value={historicalForm.cost} onChange={e=>setHistoricalForm({...historicalForm,cost:e.target.value})} placeholder={t('motorcycleDetails.cost') + " (" + t('units.currency') + ")"} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                 </div>
-                <input required type="number" value={historicalForm.mileage} onChange={e=>setHistoricalForm({...historicalForm,mileage:Number(e.target.value)})} placeholder="Mileage at service" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
-                <textarea value={historicalForm.notes} onChange={e=>setHistoricalForm({...historicalForm,notes:e.target.value})} placeholder="Notes from service booklet (Optional)" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 h-20" />
-                <button type="submit" className="w-full py-3 bg-primary text-white rounded-xl font-bold">Save Record</button>
+                <input required type="number" value={historicalForm.mileage} onChange={e=>setHistoricalForm({...historicalForm,mileage:Number(e.target.value)})} placeholder={t('motorcycleDetails.mileageAtService')} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                <textarea value={historicalForm.notes} onChange={e=>setHistoricalForm({...historicalForm,notes:e.target.value})} placeholder={t('motorcycleDetails.notes') + " " + t('common.optional')} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 h-20" />
+                <button type="submit" className="w-full py-3 bg-primary text-black rounded-xl font-bold">{t('common.save')}</button>
               </form>
             </DialogContent>
           </Dialog>
           <Dialog open={isDocOpen} onOpenChange={setIsDocOpen}>
             <DialogTrigger asChild>
               <button className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-white/10 text-sm font-medium rounded-lg transition-colors border border-white/5">
-                <Plus className="w-4 h-4" /> Upload Registration
+                <Plus className="w-4 h-4" /> {t('garage.fromRegistration')}
               </button>
             </DialogTrigger>
             <DialogContent className="bg-card border-white/10 text-foreground">
-              <DialogHeader className="pr-8"><DialogTitle>Upload Vehicle Registration</DialogTitle></DialogHeader>
+              <DialogHeader className="pr-8"><DialogTitle>{t('garage.addRegistration')}</DialogTitle></DialogHeader>
               <form onSubmit={handleUploadDocument} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Document URL or Path</label>
-                  <input required value={docForm.documentUrl} onChange={e=>setDocForm({...docForm,documentUrl:e.target.value})} placeholder="Document URL" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
+                  <label className="text-sm font-medium">{t('garage.docUrlLabel')}</label>
+                  <input required value={docForm.documentUrl} onChange={e=>setDocForm({...docForm,documentUrl:e.target.value})} placeholder={t('garage.docUrlPlaceholder')} className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Registration Date</label>
-                    <CustomDatePicker value={docForm.registrationDate} onChange={val => setDocForm({...docForm, registrationDate: val})} placeholder="Select registration date" />
+                    <label className="text-sm font-medium">{t('motorcycleDetails.registrationDate')}</label>
+                    <CustomDatePicker value={docForm.registrationDate} onChange={val => setDocForm({...docForm, registrationDate: val})} placeholder={t('common.selectDate')} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Initial Mileage</label>
+                    <label className="text-sm font-medium">{t('motorcycleDetails.initialMileage')}</label>
                     <input required type="number" value={docForm.initialMileage} onChange={e=>setDocForm({...docForm,initialMileage:Number(e.target.value)})} placeholder="0" className="w-full bg-background border border-white/10 rounded-lg px-3 py-2" />
                   </div>
                 </div>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={docForm.createMaintenanceRecord} onChange={e=>setDocForm({...docForm,createMaintenanceRecord:e.target.checked})} className="w-4 h-4" />
-                  <span className="text-sm font-medium">Create initial maintenance record from registration date</span>
+                  <span className="text-sm font-medium">{t('motorcycleDetails.createInitialMaint')}</span>
                 </label>
-                <button type="submit" disabled={docLoading} className="w-full py-3 bg-primary text-white rounded-xl font-bold">{docLoading ? "Uploading..." : "Upload Document"}</button>
+                <button type="submit" disabled={docLoading} className="w-full py-3 bg-primary text-black rounded-xl font-bold">{docLoading ? t('common.uploading') : t('common.save')}</button>
               </form>
             </DialogContent>
           </Dialog>
@@ -107,15 +109,15 @@ export function DocumentsTab({ id, bike }: DocumentsTabProps) {
 
       {bike.registrationDocumentUrl ? (
         <div className="bg-card/80 backdrop-blur-md p-6 rounded-2xl border border-white/5">
-          <h4 className="font-bold text-lg mb-4">Registration Document</h4>
+          <h4 className="font-bold text-lg mb-4">{t('motorcycleDetails.documents')}</h4>
           <dl className="space-y-3">
-            <div><dt className="text-sm text-muted-foreground">Registered Date</dt><dd className="font-medium">{bike.registrationDate ? format(new Date(bike.registrationDate), 'MMMM d, yyyy') : 'N/A'}</dd></div>
-            <div><dt className="text-sm text-muted-foreground">Initial Mileage</dt><dd className="font-medium">{bike.initialMileage?.toLocaleString()} mi</dd></div>
-            <div><dt className="text-sm text-muted-foreground">Document</dt><dd className="font-mono text-sm break-all text-primary hover:underline cursor-pointer">{bike.registrationDocumentUrl}</dd></div>
+            <div><dt className="text-sm text-muted-foreground">{t('motorcycleDetails.registrationDate')}</dt><dd className="font-medium">{bike.registrationDate ? format(new Date(bike.registrationDate), 'MMMM d, yyyy') : 'N/A'}</dd></div>
+            <div><dt className="text-sm text-muted-foreground">{t('motorcycleDetails.initialMileage')}</dt><dd className="font-medium">{bike.initialMileage?.toLocaleString()} {t('units.km')}</dd></div>
+            <div><dt className="text-sm text-muted-foreground">{t('garage.photos')}</dt><dd className="font-mono text-sm break-all text-primary hover:underline cursor-pointer">{bike.registrationDocumentUrl}</dd></div>
           </dl>
         </div>
       ) : (
-        <div className="text-center py-12 text-muted-foreground bg-card/80 backdrop-blur-md border border-white/5 rounded-2xl">No registration document uploaded yet. Upload one to create initial maintenance history.</div>
+        <div className="text-center py-12 text-muted-foreground bg-card/80 backdrop-blur-md border border-white/5 rounded-2xl">{t('motorcycleDetails.noDocuments')}</div>
       )}
     </div>
   );

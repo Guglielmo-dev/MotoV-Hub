@@ -3,12 +3,14 @@ import { useLogin } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { Bike, ArrowRight } from "lucide-react";
 import { playMotorcycleRevSound } from "@/lib/sound";
+import { useTranslation } from "react-i18next";
 
 export function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const { mutate: login, isPending } = useLogin();
   const [, setLocation] = useLocation();
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,30 +34,30 @@ export function Login() {
             <h1 className="text-4xl font-bold font-display uppercase tracking-wider">MOTO<span className="text-primary">VAULT</span></h1>
           </div>
 
-          <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
-          <p className="text-muted-foreground mb-8">Enter your credentials to access your garage.</p>
+          <h2 className="text-3xl font-bold mb-2">{t('auth.welcomeBack')}</h2>
+          <p className="text-muted-foreground mb-8">{t('auth.loginSubtitle')}</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Username</label>
+              <label className="text-sm font-medium text-foreground">{t('auth.username')}</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-card border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                placeholder="rider_89"
+                placeholder={t('auth.usernamePlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Password</label>
+              <label className="text-sm font-medium text-foreground">{t('auth.password')}</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-card border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                placeholder="••••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 required
               />
             </div>
@@ -65,14 +67,14 @@ export function Login() {
               disabled={isPending}
               className="w-full py-3.5 px-4 bg-primary hover:bg-primary/90 text-black font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex justify-center items-center gap-2"
             >
-              {isPending ? "Starting Engine..." : "Sign In"}
+              {isPending ? t('auth.startingEngine') : t('auth.signIn')}
               {!isPending && <ArrowRight className="w-5 h-5" />}
             </button>
           </form>
 
           <p className="mt-8 text-center text-muted-foreground">
-            Don't have an account?{' '}
-            <Link href="/register" className="text-primary hover:underline font-medium">Create one</Link>
+            {t('auth.noAccount')}{' '}
+            <Link href="/register" className="text-primary hover:underline font-medium">{t('auth.createOne')}</Link>
           </p>
         </div>
       </div>
@@ -82,7 +84,7 @@ export function Login() {
         <div className="absolute inset-0 bg-gradient-to-r from-background to-transparent z-10" />
         <img
           src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=2070&auto=format&fit=crop"
-          alt="Motorcycle at night"
+          alt={t('common.altMotorcycleNight')}
           className="absolute inset-0 w-full h-full object-cover grayscale-[0.3]"
         />
       </div>

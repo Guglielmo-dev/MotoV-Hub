@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MapPin, Calendar, Edit3, Trash2, Star, Navigation } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { TravelLog } from "./types";
+import { useTranslation } from "react-i18next";
 import { formatDate, gradientFor, UpcomingBadge } from "./components";
 
 interface TravelDetailDialogProps {
@@ -15,12 +16,13 @@ interface TravelDetailDialogProps {
 export function TravelDetailDialog({ log, onEdit, onClose }: TravelDetailDialogProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const { mutate: deleteLog } = useMutation({
     mutationFn: () => apiRequest('DELETE', `/api/travel/${log.id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['/api/travel'] });
-      toast({ title: 'Journey deleted' });
+      toast({ title: t('travel.journeyDeleted') });
       onClose();
     },
   });
@@ -59,14 +61,14 @@ export function TravelDetailDialog({ log, onEdit, onClose }: TravelDetailDialogP
           </div>
 
           <div>
-            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">Diary Entry</h3>
+            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">{t('travel.diaryEntry')}</h3>
             <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">{log.description}</p>
           </div>
 
           {log.highlights && (
             <div className="p-4 bg-background rounded-xl border border-white/8 space-y-2">
               <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Star className="w-3.5 h-3.5 text-yellow-400" /> Highlights
+                <Star className="w-3.5 h-3.5 text-yellow-400" /> {t('travel.highlights')}
               </h3>
               <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap">{log.highlights}</p>
             </div>
@@ -75,11 +77,11 @@ export function TravelDetailDialog({ log, onEdit, onClose }: TravelDetailDialogP
           <div className="flex gap-3 pt-2 border-t border-white/5">
             <button onClick={onEdit}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-muted-foreground hover:text-foreground hover:border-white/25 transition-all text-sm">
-              <Edit3 className="w-4 h-4" /> Edit
+              <Edit3 className="w-4 h-4" /> {t('common.edit')}
             </button>
             <button onClick={() => deleteLog()}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-destructive/20 text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-all text-sm ml-auto">
-              <Trash2 className="w-4 h-4" /> Delete
+              <Trash2 className="w-4 h-4" /> {t('common.delete')}
             </button>
           </div>
         </div>

@@ -9,26 +9,19 @@ import PgSessionStore from "connect-pg-simple";
 import { pool } from "./db";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
 import bcrypt from "bcrypt";
+import { supabase } from "./supabase";
 import { rateLimit } from "express-rate-limit";
-import { 
-  insertCommunityPostSchema, 
-  insertCommunityCommentSchema, 
-  insertTravelLogSchema 
+import {
+  insertCommunityPostSchema,
+  insertCommunityCommentSchema,
+  insertTravelLogSchema
 } from "@shared/schema";
 
-const uploadDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const diskStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unique}${path.extname(file.originalname)}`);
-  }
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
-const upload = multer({ storage: diskStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 const PostgresStore = PgSessionStore(session);
 
@@ -43,7 +36,7 @@ const authLimiter = rateLimit({
 
 const uploadLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 20, 
+  max: 20,
   message: { message: "Troppe richieste" }
 });
 
@@ -51,7 +44,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
   // Enforce session secret
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
@@ -68,7 +61,7 @@ export async function registerRoutes(
       createTableIfMissing: true,
       tableName: 'session'
     }),
-    cookie: { 
+    cookie: {
       secure: process.env.NODE_ENV === "production",
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     }
@@ -82,21 +75,77 @@ export async function registerRoutes(
     next();
   };
 
-  // Serve uploaded files statically
-  app.use("/uploads", express.static(uploadDir));
 
-  // Image upload endpoint
-  app.post("/api/upload", authLimiter, requireAuth, upload.single("image"), (req, res) => {
-    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-    
-    // MIME type validation
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedMimes.includes(req.file.mimetype)) {
-      return res.status(400).json({ message: "Formato file non supportato" });
+  // Multi-type upload endpoint (Images & Audio)
+  app.post("/api/upload", authLimiter, requireAuth, upload.single("image"), async (req, res) => {
+    console.log(`[Upload] Received request: ${req.file?.originalname} (${req.file?.mimetype})`);
+
+    if (!req.file) {
+      console.warn("[Upload] No file provided");
+      return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const url = `/uploads/${req.file.filename}`;
-    res.json({ url });
+    const isAudio = req.file.mimetype.startsWith('audio/');
+    const isImage = req.file.mimetype.startsWith('image/');
+
+    // MIME type validation
+    const allowedImageMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedAudioMimes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/aac'];
+
+    if (isImage && !allowedImageMimes.includes(req.file.mimetype)) {
+      console.warn(`[Upload] Image mime type not allowed: ${req.file.mimetype}`);
+      return res.status(400).json({ message: "Formato immagine non supportato" });
+    }
+
+    if (isAudio && !allowedAudioMimes.includes(req.file.mimetype)) {
+      console.warn(`[Upload] Audio mime type not allowed: ${req.file.mimetype}`);
+      return res.status(400).json({ message: "Formato audio non supportato" });
+    }
+
+    if (!isImage && !isAudio) {
+      console.warn(`[Upload] File type not allowed: ${req.file.mimetype}`);
+      return res.status(400).json({ message: "Tipo di file non consentito" });
+    }
+
+    // Size limits check
+    const sizeLimit = isAudio ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (req.file.size > sizeLimit) {
+      console.warn(`[Upload] File size too large: ${req.file.size} bytes`);
+      return res.status(400).json({
+        message: `Il file supera il limite di ${isAudio ? '2MB' : '5MB'}`
+      });
+    }
+
+    try {
+      const ext = path.extname(req.file.originalname);
+      const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+      const bucketPath = isAudio ? `audio/${filename}` : filename;
+
+      console.log(`[Upload] Uploading to Supabase: bucket=motorcycle-images, path=${bucketPath}`);
+
+      const { error } = await supabase.storage
+        .from("motorcycle-images")
+        .upload(bucketPath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error("[Upload] Supabase error:", error);
+        return res.status(500).json({ message: "Errore durante l'upload su Supabase" });
+      }
+
+      const { data } = supabase.storage
+        .from("motorcycle-images")
+        .getPublicUrl(bucketPath);
+
+      console.log(`[Upload] Success! Public URL: ${data.publicUrl}`);
+      res.json({ url: data.publicUrl });
+    } catch (err) {
+      console.error("[Upload] Handler exception:", err);
+      res.status(500).json({ message: "Internal server error during upload" });
+    }
   });
 
   // Auth Routes
@@ -107,14 +156,14 @@ export async function registerRoutes(
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists", field: "username" });
       }
-      
+
       // Password Hashing (SICUREZZA 1)
       const hashedPassword = await bcrypt.hash(input.password, 12);
       const user = await storage.createUser({
         ...input,
         password: hashedPassword
       });
-      
+
       (req.session as any).userId = user.id;
       res.status(201).json(user);
     } catch (err) {
@@ -130,12 +179,12 @@ export async function registerRoutes(
     try {
       const input = api.auth.login.input.parse(req.body);
       const user = await storage.getUserByUsername(input.username);
-      
+
       // Secure Password Comparison (SICUREZZA 1)
       if (!user || !(await bcrypt.compare(input.password, user.password))) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
-      
+
       (req.session as any).userId = user.id;
       res.status(200).json(user);
     } catch (err) {
@@ -352,7 +401,7 @@ export async function registerRoutes(
       }
       const input = api.documents.uploadRegistration.input.parse(req.body);
       const updated = await storage.uploadRegistrationDocument(motorcycleId, input.documentUrl, input.registrationDate, input.initialMileage);
-      
+
       let maintenanceCreated = false;
       if (input.createMaintenanceRecord) {
         await storage.createMaintenanceEvent(motorcycleId, {
@@ -446,6 +495,27 @@ export async function registerRoutes(
     }
   });
 
+  app.get('/api/community/posts/:id', requireAuth, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id as string);
+      const userId = (req.session as any).userId;
+      
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+
+      const post = await storage.getCommunityPost(postId, userId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.delete('/api/community/posts/:id', requireAuth, async (req, res) => {
     const userId = (req.session as any).userId;
     await storage.deleteCommunityPost(Number(req.params.id), userId);
@@ -453,14 +523,14 @@ export async function registerRoutes(
   });
 
   app.get('/api/community/posts/:id/comments', requireAuth, async (req, res) => {
-    const comments = await storage.getCommunityComments(Number(req.params.id));
+    const comments = await storage.getCommunityComments(Number(req.params.id as string));
     res.json(comments);
   });
 
   app.post('/api/community/posts/:id/comments', requireAuth, async (req, res) => {
     try {
       const userId = (req.session as any).userId;
-      const postId = Number(req.params.id);
+      const postId = Number(req.params.id as string);
       const input = insertCommunityCommentSchema.pick({ content: true }).parse(req.body);
       const comment = await storage.createCommunityComment(postId, userId, input.content);
       res.status(201).json(comment);

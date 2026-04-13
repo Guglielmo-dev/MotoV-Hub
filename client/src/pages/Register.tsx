@@ -3,12 +3,14 @@ import { useRegister } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { Bike, ArrowRight } from "lucide-react";
 import { playMotorcycleRevSound } from "@/lib/sound";
+import { useTranslation } from "react-i18next";
 
 export function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const { mutate: register, isPending } = useRegister();
   const [, setLocation] = useLocation();
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +29,7 @@ export function Register() {
         <div className="absolute inset-0 bg-gradient-to-l from-background to-transparent z-10" />
         <img
           src="https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?q=80&w=2070&auto=format&fit=crop"
-          alt="Motorcycle in garage"
+          alt={t('common.altMotorcycleGarage')}
           className="absolute inset-0 w-full h-full object-cover grayscale-[0.2]"
         />
       </div>
@@ -42,31 +44,31 @@ export function Register() {
             </div>
           </div>
 
-          <h2 className="text-3xl font-bold mb-2">Start Your Engine</h2>
-          <p className="text-muted-foreground mb-8">Create an account to manage your motorcycle collection and maintenance.</p>
+          <h2 className="text-3xl font-bold mb-2">{t('auth.joinCommunity')}</h2>
+          <p className="text-muted-foreground mb-8">{t('auth.registerSubtitle')}</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Username</label>
+              <label className="text-sm font-medium text-foreground">{t('auth.username')}</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-card border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                placeholder="Choose a unique username"
+                placeholder={t('auth.chooseUsername')}
                 required
                 minLength={3}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Password</label>
+              <label className="text-sm font-medium text-foreground">{t('auth.password')}</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-card border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                placeholder="At least 6 characters"
+                placeholder={t('auth.minPasswordLength')}
                 required
                 minLength={6}
               />
@@ -77,14 +79,14 @@ export function Register() {
               disabled={isPending}
               className="w-full py-3.5 px-4 bg-primary hover:bg-primary/90 text-black font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex justify-center items-center gap-2"
             >
-              {isPending ? "Creating Profile..." : "Create Account"}
+              {isPending ? t('auth.creatingProfile') : t('auth.registerAction')}
               {!isPending && <ArrowRight className="w-5 h-5" />}
             </button>
           </form>
 
           <p className="mt-8 text-center text-muted-foreground">
-            Already a member?{' '}
-            <Link href="/login" className="text-primary hover:underline font-medium">Sign in</Link>
+            {t('auth.hasAccount')}{' '}
+            <Link href="/login" className="text-primary hover:underline font-medium">{t('auth.signIn')}</Link>
           </p>
         </div>
       </div>

@@ -10,6 +10,7 @@ import {
   getCustomLoginAudioName, hasCustomLoginAudio,
   playMotorcycleRevSound, isAudioEnabled, setAudioEnabled,
 } from "@/lib/sound";
+import { useTranslation } from "react-i18next";
 
 interface SettingsModalProps {
   open: boolean;
@@ -23,6 +24,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [hasCustom, setHasCustom] = useState(hasCustomLoginAudio);
   const [uploading, setUploading] = useState(false);
   const [audioOn, setAudioOn] = useState(isAudioEnabled);
+  const { t, i18n } = useTranslation();
 
   const handleToggleAudio = (enabled: boolean) => {
     setAudioEnabled(enabled);
@@ -58,14 +60,14 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         <DialogHeader>
           <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4 flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            Settings
+            {t('settings.title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="pt-4 space-y-8">
           {/* Brand Theme */}
           <div>
-            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">Brand Theme</h3>
+            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">{t('settings.brandTheme')}</h3>
             <div className="grid grid-cols-2 gap-3">
               {BRAND_THEMES.map((t) => {
                 const isSelected = t.id === brandId;
@@ -100,10 +102,44 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             </div>
           </div>
 
+          {/* Language Selection */}
+          <div className="border-t border-white/5 pt-6">
+            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">{t('settings.language')}</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: 'it', label: t('settings.it'), flag: '🇮🇹', units: '€ · km' },
+                { id: 'en', label: t('settings.en'), flag: '🇬🇧', units: '$ · mi' }
+              ].map((lang) => {
+                const isSelected = i18n.language === lang.id;
+                return (
+                  <button
+                    key={lang.id}
+                    onClick={() => i18n.changeLanguage(lang.id)}
+                    className={`relative flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left
+                      ${isSelected
+                        ? 'border-primary/50 bg-primary/5'
+                        : 'border-white/8 bg-background hover:border-white/20 hover:bg-white/3'}`}
+                  >
+                    <div className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center bg-white/5 text-xl">
+                      {lang.flag}
+                    </div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm font-display uppercase tracking-wide truncate">{lang.label}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground font-mono">{lang.units}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Login Sound */}
           <div className="border-t border-white/5 pt-6">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Login Sound</h3>
+              <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">{t('settings.loginSound')}</h3>
               <div className="flex items-center gap-2.5">
                 {audioOn
                   ? <Volume2 className="w-3.5 h-3.5 text-primary" />
@@ -117,7 +153,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               </div>
             </div>
             <p className="text-xs text-muted-foreground mb-4">
-              Plays when you sign in or register. Upload your own audio to replace the default engine rev.
+              {t('settings.loginSoundDesc')}
             </p>
 
             <div className={`space-y-3 transition-opacity duration-200 ${!audioOn ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -127,21 +163,21 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                     <Music className="w-4 h-4 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{customAudioName || 'Custom audio'}</p>
-                    <p className="text-xs text-muted-foreground">Custom audio active</p>
+                    <p className="text-sm font-medium truncate">{customAudioName || t('settings.customAudioNameFallback')}</p>
+                    <p className="text-xs text-muted-foreground">{t('settings.customAudioActive')}</p>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => playMotorcycleRevSound()}
                       className="p-2 rounded-lg bg-card hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors"
-                      title="Preview"
+                      title={t('settings.preview')}
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={handleRemoveAudio}
                       className="p-2 rounded-lg bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                      title="Remove custom audio"
+                      title={t('settings.removeAudio')}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -153,13 +189,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                     <Volume2 className="w-4 h-4 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">Default — Engine Rev</p>
-                    <p className="text-xs text-muted-foreground">Synthesized motorcycle sound</p>
+                    <p className="text-sm font-medium">{t('settings.defaultSound')}</p>
+                    <p className="text-xs text-muted-foreground">{t('settings.synthesized')}</p>
                   </div>
                   <button
                     onClick={() => playMotorcycleRevSound()}
                     className="p-2 rounded-lg bg-card hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors"
-                    title="Preview default"
+                    title={t('settings.preview')}
                   >
                     <Volume2 className="w-4 h-4" />
                   </button>
@@ -172,7 +208,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-white/20 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors text-sm disabled:opacity-50"
               >
                 <Upload className="w-4 h-4" />
-                {uploading ? 'Processing...' : hasCustom ? 'Replace Audio' : 'Upload Audio File'}
+                {uploading ? t('settings.processing') : hasCustom ? t('settings.replaceAudio') : t('settings.uploadAudio')}
               </button>
               <input
                 ref={audioFileRef}
@@ -182,13 +218,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleAudioFile(f); }}
               />
               <p className="text-xs text-muted-foreground text-center">
-                Supports MP3, WAV, OGG, AAC — keep files small (&lt;2MB)
+                {t('settings.audioHelp')}
               </p>
             </div>
 
             {!audioOn && (
               <p className="text-xs text-muted-foreground text-center mt-3 italic">
-                Sound is disabled — toggle the switch to re-enable
+                {t('settings.soundDisabled')}
               </p>
             )}
           </div>
@@ -200,16 +236,17 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
 
 export function SettingsTrigger({ collapsed }: { collapsed?: boolean }) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
   return (
     <>
       <button
         data-testid="button-settings"
         onClick={() => setOpen(true)}
-        title="Settings"
+        title={t('nav.settings')}
         className="flex items-center gap-3 px-4 py-3 w-full text-left rounded-xl font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
       >
         <Settings className="w-5 h-5 flex-shrink-0" />
-        {!collapsed && <span>Settings</span>}
+        {!collapsed && <span>{t('nav.settings')}</span>}
       </button>
       <SettingsModal open={open} onClose={() => setOpen(false)} />
     </>

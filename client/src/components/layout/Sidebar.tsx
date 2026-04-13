@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Bike, LogOut, ChevronLeft, ChevronRight, Users, BookOpen } from "lucide-react";
-import { useLogout } from "@/hooks/use-auth";
+import { useAuth, useLogout } from "@/hooks/use-auth";
 import { useTheme } from "@/context/ThemeContext";
 import { SettingsTrigger } from "@/components/SettingsModal";
+import { useTranslation } from "react-i18next";
 
 import { prefetchPage, PageName } from "@/lib/route-prefetch";
 
@@ -11,16 +12,26 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
+const getInitials = (name: string) => {
+  if (!name) return "??";
+  if (name.includes(' ')) {
+    return name.split(' ').map(p => p[0]).join('').toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const [location] = useLocation();
+  const { data: user, isLoading } = useAuth();
   const { mutate: logout, isPending } = useLogout();
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const links: { href: string; label: string; icon: any; exact: boolean; page: PageName }[] = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true, page: 'Dashboard' },
-    { href: "/garage", label: "Garage", icon: Bike, exact: false, page: 'Garage' },
-    { href: "/community", label: "Community", icon: Users, exact: false, page: 'Community' },
-    { href: "/travel", label: "Travel Diary", icon: BookOpen, exact: false, page: 'TravelDiary' },
+    { href: "/", label: t('nav.dashboard'), icon: LayoutDashboard, exact: true, page: 'Dashboard' },
+    { href: "/garage", label: t('nav.garage'), icon: Bike, exact: false, page: 'Garage' },
+    { href: "/community", label: t('nav.community'), icon: Users, exact: false, page: 'Community' },
+    { href: "/travel", label: t('nav.travelDiary'), icon: BookOpen, exact: false, page: 'TravelDiary' },
   ];
 
   return (
@@ -41,7 +52,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <button
           data-testid="button-sidebar-toggle"
           onClick={onToggle}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? t('common.confirm') : t('common.close')}
           className="absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card border border-white/15 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-all z-10"
         >
           {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
@@ -74,19 +85,56 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         })}
       </nav>
 
+      {/* User Session Block */}
+      <div className={`py-4 border-t border-b border-white/5 ${collapsed ? 'px-2' : 'px-3'}`}>
+        {isLoading ? (
+          <div className={`flex items-center animate-pulse ${collapsed ? 'justify-center' : 'gap-3 px-4'}`}>
+            <div className="w-9 h-9 rounded-full bg-white/5 flex-shrink-0" />
+            {!collapsed && (
+              <div className="space-y-2 flex-1">
+                <div className="h-4 bg-white/5 rounded w-3/4" />
+                <div className="h-3 bg-white/5 rounded w-1/2" />
+              </div>
+            )}
+          </div>
+        ) : user ? (
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 pl-2 pr-4'}`} title={collapsed ? user.username : undefined}>
+            <div 
+              className="w-9 h-9 rounded-full bg-[var(--primary)]/20 border border-[var(--primary)]/40 flex items-center justify-center flex-shrink-0 text-[var(--primary)] font-bold text-sm"
+              style={{ boxShadow: collapsed ? `0 0 12px rgba(${theme.shadowRgb}, 0.1)` : 'none' }}
+            >
+              {getInitials(user.username)}
+            </div>
+            {!collapsed && (
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-display font-bold uppercase tracking-wider text-foreground truncate">
+                  {user.username}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">{t('common.online')}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+
       {/* Bottom */}
-      <div className={`pb-3 border-t border-white/5 pt-3 space-y-1 ${collapsed ? 'px-2' : 'px-3'}`}>
+      <div className={`pb-3 pt-3 space-y-1 ${collapsed ? 'px-2' : 'px-3'}`}>
         <SettingsTrigger collapsed={collapsed} />
         <button
           onClick={() => logout()}
           disabled={isPending}
-          title={collapsed ? 'Sign Out' : undefined}
+          title={collapsed ? t('nav.signOut') : undefined}
           className={`flex items-center rounded-xl font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors w-full
             ${collapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}
           `}
         >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span>Sign Out</span>}
+          <div className="flex items-center gap-3">
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span>{t('nav.signOut')}</span>}
+          </div>
         </button>
       </div>
     </aside>

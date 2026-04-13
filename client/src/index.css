@@ -2,6 +2,14 @@
 @plugin "tailwindcss-animate";
 @plugin "@tailwindcss/typography";
 
+:root {
+  --primary: 142 100% 35%;
+  --accent: 142 100% 35%;
+  --ring: 142 100% 35%;
+  --chart-1: 142 100% 35%;
+  --chart-2: 142 70% 22%;
+}
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-display: "Rajdhani", sans-serif;
@@ -17,7 +25,7 @@
   --color-popover-foreground: hsl(0 0% 97%);
   --color-popover-border: hsl(0 0% 12%);
 
-  --color-primary: hsl(142 100% 35%);
+  --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(0 0% 100%);
   --color-primary-border: hsl(142 100% 45%);
 
@@ -27,7 +35,7 @@
   --color-muted: hsl(0 0% 10%);
   --color-muted-foreground: hsl(0 0% 55%);
 
-  --color-accent: hsl(142 100% 35%);
+  --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(0 0% 100%);
 
   --color-destructive: hsl(0 84% 60%);
@@ -35,7 +43,10 @@
 
   --color-border: hsl(0 0% 12%);
   --color-input: hsl(0 0% 12%);
-  --color-ring: hsl(142 100% 35%);
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
 
   --radius-lg: .5625rem;
   --radius-md: .375rem;
@@ -67,6 +78,32 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Global Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.4);
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: -0.025em;
@@ -84,4 +121,20 @@
   background-clip: text;
   color: transparent;
   background-image: linear-gradient(to right, var(--color-primary), #34d399); /* emerald-400 */
+}
+
+@utility comments-scrollbar {
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.2);
+    border-radius: 2px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.4);
+  }
 }

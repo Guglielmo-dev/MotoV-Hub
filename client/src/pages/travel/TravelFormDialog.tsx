@@ -6,6 +6,7 @@ import { Camera, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TravelLog, TravelFormData, emptyForm } from "./types";
+import { useTranslation } from "react-i18next";
 
 interface TravelFormDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function TravelFormDialog({ open, onClose, existing }: TravelFormDialogPr
   const fileRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const { mutate: save, isPending } = useMutation({
     mutationFn: (data: object) => existing
@@ -36,7 +38,7 @@ export function TravelFormDialog({ open, onClose, existing }: TravelFormDialogPr
       : apiRequest('POST', '/api/travel', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['/api/travel'] });
-      toast({ title: existing ? 'Journey updated!' : 'Journey logged!' });
+      toast({ title: existing ? t('travel.journeyUpdated') : t('travel.journeyLogged') });
       onClose();
     },
   });
@@ -64,45 +66,45 @@ export function TravelFormDialog({ open, onClose, existing }: TravelFormDialogPr
       <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[620px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-display uppercase text-primary">
-            {existing ? 'Edit Journey' : 'Log a Journey'}
+            {existing ? t('travel.editJourney') : t('travel.logJourney')}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={e => { e.preventDefault(); save(form); }} className="space-y-4 pt-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Trip Title *</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">{t('travel.tripTitle')} *</label>
               <input required value={form.title} onChange={e => set('title', e.target.value)}
-                placeholder="e.g. Alpine Roads Adventure"
+                placeholder={t('travel.titlePlaceholder')}
                 className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50"
                 data-testid="input-travel-title" />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Location *</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">{t('travel.location')} *</label>
               <input required value={form.location} onChange={e => set('location', e.target.value)}
-                placeholder="e.g. Amalfi Coast, Italy"
+                placeholder={t('travel.locationPlaceholder')}
                 className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50"
                 data-testid="input-travel-location" />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Date *</label>
-              <DatePicker value={form.visitDate} onChange={val => set('visitDate', val)} placeholder="Select trip date" />
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">{t('travel.date')} *</label>
+              <DatePicker value={form.visitDate} onChange={val => set('visitDate', val)} placeholder={t('travel.selectDate')} />
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Diary Entry *</label>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">{t('travel.diaryEntry')} *</label>
             <textarea required value={form.description} onChange={e => set('description', e.target.value)}
-              placeholder="Describe the roads, the weather, the people you met, the feeling of freedom..."
+              placeholder={t('travel.diaryPlaceholder')}
               className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 h-36 resize-none focus:outline-none focus:border-primary/50"
               data-testid="input-travel-description" />
           </div>
 
           <div>
             <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">
-              Highlights — food, sights, tips
+              {t('travel.highlights')}
             </label>
             <textarea value={form.highlights} onChange={e => set('highlights', e.target.value)}
-              placeholder="Best pasta in Rome at Trattoria da Mario... Incredible sunset at the Stelvio Pass... Pack rain gear..."
+              placeholder={t('travel.highlightsPlaceholder')}
               className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 h-24 resize-none focus:outline-none focus:border-primary/50"
               data-testid="input-travel-highlights" />
           </div>
@@ -111,7 +113,7 @@ export function TravelFormDialog({ open, onClose, existing }: TravelFormDialogPr
             <input type="checkbox" id="isUpcoming" checked={form.isUpcoming} onChange={e => set('isUpcoming', e.target.checked)}
               className="w-4 h-4 rounded accent-primary" />
             <label htmlFor="isUpcoming" className="text-sm cursor-pointer">
-              This is a <strong>planned upcoming trip</strong> (not yet completed)
+              {t('travel.plannedTripDesc')}
             </label>
           </div>
 
@@ -127,7 +129,7 @@ export function TravelFormDialog({ open, onClose, existing }: TravelFormDialogPr
             <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-white/15 text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors text-sm disabled:opacity-50">
               <Camera className="w-4 h-4" />
-              {uploading ? 'Uploading...' : 'Add a photo from your ride'}
+              {uploading ? t('common.uploading') : t('travel.addPhoto')}
             </button>
           )}
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
@@ -136,12 +138,12 @@ export function TravelFormDialog({ open, onClose, existing }: TravelFormDialogPr
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
               className="flex-1 py-2.5 rounded-xl border border-white/10 text-muted-foreground hover:text-foreground transition-colors">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button type="submit" disabled={isPending}
               className="flex-1 py-2.5 bg-primary text-black font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
               data-testid="button-submit-travel">
-              {isPending ? 'Saving...' : existing ? 'Update Journey' : 'Log Journey'}
+              {isPending ? t('common.saving') : existing ? t('travel.updateJourney') : t('travel.logJourney')}
             </button>
           </div>
         </form>

@@ -4,12 +4,14 @@ import { Link } from "wouter";
 import { Plus, Bike, Calendar, Settings2, FileText, Camera } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ImageUploadField } from "@/components/ui/ImageUploadField";
+import { useTranslation } from "react-i18next";
 import { DatePicker } from "@/components/ui/DatePicker";
 
 export function Garage() {
   const { data: motorcycles, isLoading } = useMotorcycles();
   const { mutate: createBike, isPending } = useCreateMotorcycle();
   const { mutate: updateBike } = useUpdateMotorcycle();
+  const { t } = useTranslation();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
@@ -70,8 +72,8 @@ export function Garage() {
     <div className="space-y-8 fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-display">My Garage</h1>
-          <p className="text-muted-foreground mt-1">Manage your motorcycle collection.</p>
+          <h1 className="text-3xl font-bold font-display">{t('garage.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('garage.subtitle')}</p>
         </div>
 
         <div className="flex gap-2">
@@ -80,45 +82,45 @@ export function Garage() {
             <DialogTrigger asChild>
               <button data-testid="button-add-motorcycle" className="flex items-center gap-2 px-5 py-2.5 bg-primary text-black font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5">
                 <Plus className="w-5 h-5" />
-                Add Motorcycle
+                {t('garage.addMotorcycle')}
               </button>
             </DialogTrigger>
             <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
               <DialogHeader className="pr-8">
-                <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">New Motorcycle</DialogTitle>
+                <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">{t('garage.newMotorcycle')}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Brand</label>
-                    <input data-testid="input-brand" required value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className={inputCls} placeholder="e.g. Kawasaki" />
+                    <label className="text-sm font-medium">{t('garage.brand')}</label>
+                    <input data-testid="input-brand" required value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className={inputCls} placeholder={t('garage.brandPlaceholder')} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Model</label>
-                    <input data-testid="input-model" required value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className={inputCls} placeholder="e.g. Ninja ZX-10R" />
+                    <label className="text-sm font-medium">{t('garage.model')}</label>
+                    <input data-testid="input-model" required value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className={inputCls} placeholder={t('garage.modelPlaceholder')} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Year</label>
+                    <label className="text-sm font-medium">{t('garage.year')}</label>
                     <input type="number" required value={formData.year} onChange={e => setFormData({...formData, year: parseInt(e.target.value)})} className={inputCls} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Engine (cc)</label>
+                    <label className="text-sm font-medium">{t('garage.engineSize')} (cc)</label>
                     <input value={formData.engineSize} onChange={e => setFormData({...formData, engineSize: e.target.value})} className={inputCls} placeholder="998" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Mileage</label>
+                    <label className="text-sm font-medium">{t('garage.mileage')}</label>
                     <input type="number" required value={formData.mileage} onChange={e => setFormData({...formData, mileage: parseInt(e.target.value)})} className={inputCls} />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
-                  <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className={`${inputCls} h-20 resize-none`} placeholder="e.g. Track-tuned beast" />
+                 <div className="space-y-2">
+                  <label className="text-sm font-medium">{t('garage.description')}</label>
+                  <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className={`${inputCls} h-20 resize-none`} placeholder={t('garage.descriptionPlaceholder')} />
                 </div>
-                <ImageUploadField label="Photo" value={formData.photos} onChange={url => setFormData({...formData, photos: url})} />
+                <ImageUploadField label={t('garage.photos')} value={formData.photos} onChange={url => setFormData({...formData, photos: url})} />
                 <button type="submit" disabled={isPending} className="w-full py-3 bg-primary text-black rounded-xl font-bold mt-4 hover:bg-primary/90 transition-colors disabled:opacity-50">
-                  {isPending ? "Saving..." : "Save to Garage"}
+                  {isPending ? t('garage.saving') : t('garage.saveToGarage')}
                 </button>
               </form>
             </DialogContent>
@@ -129,53 +131,53 @@ export function Garage() {
             <DialogTrigger asChild>
               <button data-testid="button-from-registration" className="flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground font-semibold rounded-xl hover:bg-white/10 transition-all border border-white/5">
                 <FileText className="w-5 h-5" />
-                From Registration
+                {t('garage.fromRegistration')}
               </button>
             </DialogTrigger>
             <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
               <DialogHeader className="pr-8">
-                <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">Add from Registration Document</DialogTitle>
+                <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">{t('garage.addRegistration') || 'Add from Registration Document'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleRegistrationSubmit} className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Brand</label>
-                    <input required value={regData.brand} onChange={e => setRegData({...regData, brand: e.target.value})} className={inputCls} placeholder="e.g. Kawasaki" />
+                    <label className="text-sm font-medium">{t('garage.brand')}</label>
+                    <input required value={regData.brand} onChange={e => setRegData({...regData, brand: e.target.value})} className={inputCls} placeholder={t('garage.brandPlaceholder')} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Model</label>
-                    <input required value={regData.model} onChange={e => setRegData({...regData, model: e.target.value})} className={inputCls} placeholder="e.g. Z900" />
+                    <label className="text-sm font-medium">{t('garage.model')}</label>
+                    <input required value={regData.model} onChange={e => setRegData({...regData, model: e.target.value})} className={inputCls} placeholder={t('garage.modelPlaceholder')} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Year</label>
+                    <label className="text-sm font-medium">{t('garage.year')}</label>
                     <input type="number" required value={regData.year} onChange={e => setRegData({...regData, year: parseInt(e.target.value)})} className={inputCls} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Engine (cc)</label>
+                    <label className="text-sm font-medium">{t('garage.engineSize')} (cc)</label>
                     <input value={regData.engineSize} onChange={e => setRegData({...regData, engineSize: e.target.value})} className={inputCls} placeholder="948" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Init. Mileage</label>
+                    <label className="text-sm font-medium uppercase font-mono text-[10px]">{t('motorcycleDetails.initialMileage')}</label>
                     <input type="number" required value={regData.initialMileage} onChange={e => setRegData({...regData, initialMileage: parseInt(e.target.value)})} className={inputCls} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Registration Date</label>
-                  <DatePicker value={regData.registrationDate} onChange={val => setRegData({...regData, registrationDate: val})} placeholder="Select registration date" />
+                  <label className="text-sm font-medium">{t('motorcycleDetails.registrationDate')}</label>
+                  <DatePicker value={regData.registrationDate} onChange={val => setRegData({...regData, registrationDate: val})} placeholder={t('common.selectDate')} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Document URL (Optional)</label>
-                  <input value={regData.documentUrl} onChange={e => setRegData({...regData, documentUrl: e.target.value})} className={inputCls} placeholder="https://..." />
+                  <label className="text-sm font-medium">{t('garage.docUrlLabel')}</label>
+                  <input value={regData.documentUrl} onChange={e => setRegData({...regData, documentUrl: e.target.value})} className={inputCls} placeholder={t('garage.docUrlPlaceholder')} />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
-                  <textarea value={regData.description} onChange={e => setRegData({...regData, description: e.target.value})} className={`${inputCls} h-16 resize-none`} placeholder="Stock, well maintained" />
+                 <div className="space-y-2">
+                  <label className="text-sm font-medium">{t('garage.description')}</label>
+                  <textarea value={regData.description} onChange={e => setRegData({...regData, description: e.target.value})} className={`${inputCls} h-16 resize-none`} placeholder={t('garage.descriptionPlaceholder')} />
                 </div>
-                <ImageUploadField label="Photo" value={regData.photos} onChange={url => setRegData({...regData, photos: url})} />
+                <ImageUploadField label={t('garage.photos')} value={regData.photos} onChange={url => setRegData({...regData, photos: url})} />
                 <button type="submit" disabled={isPending} className="w-full py-3 bg-primary text-black rounded-xl font-bold mt-4 hover:bg-primary/90 transition-colors disabled:opacity-50">
-                  {isPending ? "Adding..." : "Create Motorcycle"}
+                  {isPending ? t('garage.adding') : t('garage.createMotorcycle')}
                 </button>
               </form>
             </DialogContent>
@@ -187,16 +189,16 @@ export function Garage() {
       <Dialog open={editingPhotoId !== null} onOpenChange={open => { if (!open) { setEditingPhotoId(null); setNewPhotoUrl(''); } }}>
         <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[420px]">
           <DialogHeader className="pr-8">
-            <DialogTitle className="text-xl font-display uppercase text-primary border-b border-white/10 pb-4">Change Photo</DialogTitle>
+            <DialogTitle className="text-xl font-display uppercase text-primary border-b border-white/10 pb-4">{t('garage.changePhoto')}</DialogTitle>
           </DialogHeader>
           <div className="pt-4 space-y-4">
-            <ImageUploadField label="New Photo" value={newPhotoUrl} onChange={setNewPhotoUrl} />
+            <ImageUploadField label={t('garage.newPhoto')} value={newPhotoUrl} onChange={setNewPhotoUrl} />
             <button
               onClick={handleSavePhoto}
               disabled={!newPhotoUrl}
               className="w-full py-3 bg-primary text-black rounded-xl font-bold hover:bg-primary/90 transition-colors disabled:opacity-40"
             >
-              Save Photo
+              {t('garage.savePhoto')}
             </button>
           </div>
         </DialogContent>
@@ -209,8 +211,8 @@ export function Garage() {
       ) : motorcycles?.length === 0 ? (
         <div className="text-center py-20 bg-card rounded-2xl border border-white/5 border-dashed">
           <Bike className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <h3 className="text-xl font-bold mb-2">Empty Garage</h3>
-          <p className="text-muted-foreground max-w-sm mx-auto">No bikes yet. Add your first motorcycle above.</p>
+          <h3 className="text-xl font-bold mb-2">{t('garage.emptyGarage')}</h3>
+          <p className="text-muted-foreground max-w-sm mx-auto">{t('garage.emptyGarageDesc')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -239,7 +241,7 @@ export function Garage() {
                         setEditingPhotoId(bike.id);
                       }}
                       className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary hover:text-black"
-                      title="Change photo"
+                      title={t('common.changePhotoTooltip')}
                     >
                       <Camera className="w-4 h-4" />
                     </button>
@@ -248,7 +250,7 @@ export function Garage() {
                   <div className="p-5 flex-1 flex flex-col justify-between bg-card group-hover:bg-card/80 transition-colors">
                     <div>
                       <h4 className="text-lg font-semibold text-foreground/90">{bike.model}</h4>
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{bike.description || "No description provided."}</p>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{bike.description || t('garage.noDescription')}</p>
                     </div>
                     <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/5 text-sm text-muted-foreground font-mono">
                       <div className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-primary" />{bike.year}</div>

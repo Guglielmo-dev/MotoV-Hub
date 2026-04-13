@@ -13,8 +13,8 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:", "/uploads/"],
-      connectSrc: ["'self'", "https://mainnet.infura.io"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.supabase.co", "/uploads/"],
+      connectSrc: ["'self'", "https://mainnet.infura.io", "https://*.supabase.co"],
     }
   }
 }));

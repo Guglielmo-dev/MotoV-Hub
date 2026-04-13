@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Post } from "./types";
 import { Avatar, CategoryBadge, timeAgo } from "./components";
+import { useTranslation } from "react-i18next";
 
 interface PostCardProps {
   post: Post;
@@ -16,6 +17,7 @@ export function PostCard({ post, onClick, onEdit }: PostCardProps) {
   const { data: user } = useAuth();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const { mutate: toggleLike } = useMutation({
     mutationFn: () => apiRequest('POST', `/api/community/posts/${post.id}/like`),
@@ -26,7 +28,7 @@ export function PostCard({ post, onClick, onEdit }: PostCardProps) {
     mutationFn: () => apiRequest('DELETE', `/api/community/posts/${post.id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['/api/community/posts'] });
-      toast({ title: 'Post deleted' });
+      toast({ title: t('community.postDeleted') });
     },
   });
 
@@ -41,7 +43,7 @@ export function PostCard({ post, onClick, onEdit }: PostCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm text-primary">{post.authorUsername}</span>
-            <span className="text-xs text-muted-foreground">{timeAgo(post.createdAt)}</span>
+            <span className="text-xs text-muted-foreground">{timeAgo(post.createdAt, t)}</span>
             <CategoryBadge category={post.category} />
           </div>
           <h3 className="mt-2 font-bold text-base group-hover:text-primary transition-colors leading-snug">{post.title}</h3>
@@ -65,7 +67,7 @@ export function PostCard({ post, onClick, onEdit }: PostCardProps) {
             <button
               onClick={(e) => { e.stopPropagation(); onClick(); }}
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
-              title="View comments"
+              title={t('community.viewComments')}
             >
               <MessageCircle className="w-4 h-4" /> {post.commentCount}
             </button>
@@ -74,7 +76,7 @@ export function PostCard({ post, onClick, onEdit }: PostCardProps) {
                 <button
                   onClick={(e) => { e.stopPropagation(); onEdit(); }}
                   className="text-muted-foreground hover:text-primary transition-colors p-1"
-                  title="Edit post"
+                  title={t('common.edit')}
                   data-testid={`button-edit-post-${post.id}`}
                 >
                   <Pencil className="w-4 h-4" />

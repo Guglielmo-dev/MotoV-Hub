@@ -9,11 +9,13 @@ import { TravelCard } from "./travel/TravelCard";
 import { TravelFormDialog } from "./travel/TravelFormDialog";
 import { TravelDetailDialog } from "./travel/TravelDetailDialog";
 import { PlannedBadge } from "./travel/components";
+import { useTranslation } from "react-i18next";
 
 export function TravelDiary() {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<TravelLog | null>(null);
   const [editingLog, setEditingLog] = useState<TravelLog | null>(null);
+  const { t } = useTranslation();
 
   const { data: logs = [], isLoading } = useQuery<TravelLog[]>({
     queryKey: ['/api/travel'],
@@ -30,9 +32,9 @@ export function TravelDiary() {
         <div>
           <h1 className="text-3xl font-black font-display uppercase tracking-wide flex items-center gap-3">
             <BookOpen className="w-7 h-7 text-primary" />
-            Travel Diary
+            {t('travel.title')}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">Log your motorcycle adventures — roads, food, sights and memories</p>
+          <p className="text-muted-foreground mt-1 text-sm">{t('travel.subtitle')}</p>
         </div>
         <button
           onClick={() => setFormOpen(true)}
@@ -40,16 +42,16 @@ export function TravelDiary() {
           data-testid="button-add-journey"
         >
           <Plus className="w-4 h-4" />
-          Add Journey
+          {t('travel.addJourney')}
         </button>
       </div>
 
       {logs.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Total Trips', value: logs.length, icon: MapPin },
-            { label: 'Destinations', value: countries.length, icon: Navigation },
-            { label: 'Upcoming', value: upcoming.length, icon: Calendar },
+            { label: t('travel.stats.totalTrips'), value: logs.length, icon: MapPin },
+            { label: t('travel.stats.destinations'), value: countries.length, icon: Navigation },
+            { label: t('travel.stats.upcoming'), value: upcoming.length, icon: Calendar },
           ].map(s => (
             <div key={s.label} className="bg-card border border-white/8 rounded-2xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -74,12 +76,12 @@ export function TravelDiary() {
             <BookOpen className="w-10 h-10 text-primary/50" />
           </div>
           <div>
-            <p className="font-bold text-lg">Your diary is empty</p>
-            <p className="text-muted-foreground text-sm mt-1">Start logging your motorcycle adventures</p>
+            <p className="font-bold text-lg">{t('travel.emptyDiary')}</p>
+            <p className="text-muted-foreground text-sm mt-1">{t('travel.emptyDiaryDesc')}</p>
           </div>
           <button onClick={() => setFormOpen(true)}
             className="px-6 py-2.5 bg-primary text-black font-bold rounded-xl hover:opacity-90 transition-opacity">
-            Log your first journey
+            {t('travel.logFirstJourney')}
           </button>
         </div>
       ) : (
@@ -87,7 +89,7 @@ export function TravelDiary() {
           {upcoming.length > 0 && (
             <section>
               <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-sm font-mono uppercase tracking-widest text-green-400">Upcoming Trips</h2>
+                <h2 className="text-sm font-mono uppercase tracking-widest text-green-400">{t('travel.upcomingTrips')}</h2>
                 <div className="flex-1 h-px bg-green-400/10" />
                 <span className="text-xs text-muted-foreground">{upcoming.length}</span>
               </div>
@@ -105,7 +107,7 @@ export function TravelDiary() {
           {past.length > 0 && (
             <section>
               <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-sm font-mono uppercase tracking-widest text-muted-foreground">Past Adventures</h2>
+                <h2 className="text-sm font-mono uppercase tracking-widest text-muted-foreground">{t('travel.pastAdventures')}</h2>
                 <div className="flex-1 h-px bg-white/5" />
                 <span className="text-xs text-muted-foreground">{past.length}</span>
               </div>
