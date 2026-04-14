@@ -1,9 +1,14 @@
-import { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useRef, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Settings, Check, Upload, X, Volume2, Music, VolumeX } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { 
+  Settings, Check, Upload, X, Volume2, Music, VolumeX, Plus, 
+  Trash2, Palette, Loader2, ChevronRight, Globe, BellRing 
+} from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
-import { BRAND_THEMES, BRAND_COLORS, type BrandId } from "@/lib/themes";
+import { BRAND_THEMES, BRAND_COLORS, type BrandId, applyCustomTheme, getThemeById } from "@/lib/themes";
 import {
   setCustomLoginAudio, removeCustomLoginAudio,
   setCustomLoginAudioName, removeCustomLoginAudioName,
@@ -11,6 +16,9 @@ import {
   playMotorcycleRevSound, isAudioEnabled, setAudioEnabled,
 } from "@/lib/sound";
 import { useTranslation } from "react-i18next";
+import { useCustomThemes, useCreateCustomTheme, useDeleteCustomTheme } from "@/hooks/use-custom-themes";
+import { ColorPicker } from "@/components/ui/ColorPicker";
+import { Button } from "@/components/ui/button";
 
 interface SettingsModalProps {
   open: boolean;
@@ -20,15 +28,49 @@ interface SettingsModalProps {
 export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const { brandId, setBrand } = useTheme();
   const audioFileRef = useRef<HTMLInputElement>(null);
+  const { t, i18n } = useTranslation();
+
+  // Settings State
   const [customAudioName, setCustomAudioName] = useState<string | null>(getCustomLoginAudioName);
   const [hasCustom, setHasCustom] = useState(hasCustomLoginAudio);
   const [uploading, setUploading] = useState(false);
   const [audioOn, setAudioOn] = useState(isAudioEnabled);
-  const { t, i18n } = useTranslation();
+  const [isBrandPickerOpen, setIsBrandPickerOpen] = useState(false);
 
-  const handleToggleAudio = (enabled: boolean) => {
-    setAudioEnabled(enabled);
-    setAudioOn(enabled);
+  // Custom Themes State
+  const { data: customThemes, isLoading: themesLoading } = useCustomThemes();
+  const createTheme = useCreateCustomTheme();
+  const deleteTheme = useDeleteCustomTheme();
+  const [showNewTheme, setShowNewTheme] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [newThemeName, setNewThemeName] = useState("");
+  const [newThemeColor, setNewThemeColor] = useState("#FFD700");
+
+  const currentBrand = BRAND_THEMES.find(b => b.id === brandId);
+  const brandColor = BRAND_COLORS[brandId];
+
+  // Sync theme preview correctly
+  useEffect(() => {
+    if (!showNewTheme) {
+      const saved = localStorage.getItem('motovault-custom-theme');
+      if (saved) applyCustomTheme(saved);
+      else applyCustomTheme(BRAND_COLORS[brandId]);
+    }
+  }, [showNewTheme, brandId]);
+
+  const handleApplyCustomTheme = (color: string) => {
+    applyCustomTheme(color);
+    localStorage.setItem('motovault-custom-theme', color);
+  };
+
+  const handleCreateTheme = async () => {
+    if (!newThemeName.trim()) return;
+    await createTheme.mutateAsync({
+      brandName: newThemeName.toUpperCase(),
+      primaryColor: newThemeColor,
+    });
+    setNewThemeName("");
+    setShowNewTheme(false);
   };
 
   const handleAudioFile = (file: File) => {
@@ -46,190 +88,299 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveAudio = () => {
-    removeCustomLoginAudio();
-    removeCustomLoginAudioName();
-    setCustomAudioName(null);
-    setHasCustom(false);
-    if (audioFileRef.current) audioFileRef.current.value = '';
-  };
-
   return (
     <Dialog open={open} onOpenChange={o => !o && onClose()}>
-      <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4 flex items-center gap-2">
-            <Settings className="w-5 h-5" />
-            {t('settings.title')}
-          </DialogTitle>
+      <DialogContent className="bg-[#0A0A0A] border-white/10 text-foreground sm:max-w-[480px] p-0 overflow-hidden border-t-2 border-t-primary/60 rounded-t-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+        {/* Header - Fixed */}
+        <DialogHeader className="p-6 pb-4 border-b border-white/5">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <DialogTitle className="text-2xl font-display uppercase flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary animate-[spin-slow_8s_linear_infinite]" />
+                <span className="text-gradient tracking-tight">{t('settings.title')}</span>
+              </DialogTitle>
+              <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest opacity-60">
+                {t('settings.subtitle')}
+              </p>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="pt-4 space-y-8">
-          {/* Brand Theme */}
-          <div>
-            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">{t('settings.brandTheme')}</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {BRAND_THEMES.map((t) => {
-                const isSelected = t.id === brandId;
-                const color = BRAND_COLORS[t.id as BrandId];
-                return (
-                  <button
-                    key={t.id}
-                    data-testid={`button-theme-${t.id}`}
-                    onClick={() => setBrand(t.id as BrandId)}
-                    className={`relative flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left
-                      ${isSelected
-                        ? 'border-primary/50 bg-primary/5'
-                        : 'border-white/8 bg-background hover:border-white/20 hover:bg-white/3'}`}
-                    style={isSelected ? { boxShadow: `0 0 20px ${color}22` } : {}}
+        {/* Content - Scrollable */}
+        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+          <div className="p-6 py-4 space-y-6">
+            
+            {/* 1. SEZIONE BRAND (COMPATTA) */}
+            <div className="space-y-3">
+               <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground opacity-50 flex items-center">
+                <Palette className="w-3 h-3 mr-2 text-primary" />
+                {t('settings.brandTheme')}
+              </label>
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-white/3 border border-white/5 group hover:border-primary/30 transition-all">
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.1)]"
+                    style={{ backgroundColor: `${brandColor}11`, borderColor: brandColor }}
                   >
-                    <div
-                      className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center"
-                      style={{ backgroundColor: `${color}22`, border: `2px solid ${color}` }}
-                    >
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: color, boxShadow: isSelected ? `0 0 8px ${color}` : 'none' }}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="font-bold text-sm font-display uppercase tracking-wide truncate">{t.name}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Language Selection */}
-          <div className="border-t border-white/5 pt-6">
-            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">{t('settings.language')}</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { id: 'it', label: t('settings.it'), flag: '🇮🇹', units: '€ · km' },
-                { id: 'en', label: t('settings.en'), flag: '🇬🇧', units: '$ · mi' }
-              ].map((lang) => {
-                const isSelected = i18n.language === lang.id;
-                return (
-                  <button
-                    key={lang.id}
-                    onClick={() => i18n.changeLanguage(lang.id)}
-                    className={`relative flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left
-                      ${isSelected
-                        ? 'border-primary/50 bg-primary/5'
-                        : 'border-white/8 bg-background hover:border-white/20 hover:bg-white/3'}`}
-                  >
-                    <div className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center bg-white/5 text-xl">
-                      {lang.flag}
-                    </div>
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm font-display uppercase tracking-wide truncate">{lang.label}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
-                      </div>
-                      <span className="text-[10px] text-muted-foreground font-mono">{lang.units}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Login Sound */}
-          <div className="border-t border-white/5 pt-6">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">{t('settings.loginSound')}</h3>
-              <div className="flex items-center gap-2.5">
-                {audioOn
-                  ? <Volume2 className="w-3.5 h-3.5 text-primary" />
-                  : <VolumeX className="w-3.5 h-3.5 text-muted-foreground" />
-                }
-                <Switch
-                  checked={audioOn}
-                  onCheckedChange={handleToggleAudio}
-                  data-testid="switch-audio-enabled"
-                />
+                    <div className="w-3 h-3 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" style={{ backgroundColor: brandColor }} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-mono text-muted-foreground uppercase">{t('settings.active')}</p>
+                    <p className="font-display font-bold text-sm uppercase tracking-wider">{currentBrand?.name}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsBrandPickerOpen(true)}
+                  className="bg-primary/5 border-primary/20 text-primary hover:bg-primary hover:text-black font-bold text-[10px] uppercase rounded-lg h-8 px-4"
+                >
+                  {t('settings.change')}
+                </Button>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              {t('settings.loginSoundDesc')}
-            </p>
 
-            <div className={`space-y-3 transition-opacity duration-200 ${!audioOn ? 'opacity-40 pointer-events-none' : ''}`}>
-              {hasCustom ? (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
-                  <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <Music className="w-4 h-4 text-primary" />
+            {/* 2. I MIEI TEMI (ACCORDION) */}
+            <Accordion type="single" collapsible className="w-full space-y-2 border-none">
+              <AccordionItem value="custom-themes" className="border-none">
+                <AccordionTrigger className="flex p-3 rounded-2xl bg-white/3 border border-white/5 hover:bg-white/5 transition-all hover:no-underline">
+                  <div className="flex items-center gap-3 text-left">
+                    <Plus className="w-4 h-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-bold uppercase tracking-tight">{t('settings.myThemes')}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono uppercase opacity-60">
+                        {customThemes?.length || 0} temi salvati
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{customAudioName || t('settings.customAudioNameFallback')}</p>
-                    <p className="text-xs text-muted-foreground">{t('settings.customAudioActive')}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => playMotorcycleRevSound()}
-                      className="p-2 rounded-lg bg-card hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors"
-                      title={t('settings.preview')}
-                    >
-                      <Volume2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={handleRemoveAudio}
-                      className="p-2 rounded-lg bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                      title={t('settings.removeAudio')}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-background border border-white/10">
-                  <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                    <Volume2 className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{t('settings.defaultSound')}</p>
-                    <p className="text-xs text-muted-foreground">{t('settings.synthesized')}</p>
-                  </div>
-                  <button
-                    onClick={() => playMotorcycleRevSound()}
-                    className="p-2 rounded-lg bg-card hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors"
-                    title={t('settings.preview')}
-                  >
-                    <Volume2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
+                </AccordionTrigger>
+                <AccordionContent className="pt-3 pb-1 px-1 space-y-3">
+                   {/* Form Nuovo Tema */}
+                   <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                         <div className="space-y-1.5">
+                            <label className="text-[10px] uppercase font-mono text-muted-foreground">{t('settings.brandName')}</label>
+                            <input 
+                              value={newThemeName}
+                              onChange={(e) => setNewThemeName(e.target.value.toUpperCase())}
+                              className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-primary/50 font-bold"
+                              placeholder="EAB"
+                            />
+                         </div>
+                         <div className="space-y-1.5">
+                            <label className="text-[10px] uppercase font-mono text-muted-foreground">{t('settings.primaryColor')}</label>
+                            <Popover open={showColorPicker} onOpenChange={setShowColorPicker}>
+                              <PopoverTrigger asChild>
+                                <button className="w-full h-[34px] rounded-lg border border-white/10 flex items-center justify-between px-2 group">
+                                   <div className="w-4 h-4 rounded shadow-lg" style={{ backgroundColor: newThemeColor }} />
+                                   <span className="text-[10px] font-mono opacity-60 group-hover:text-primary transition-colors">{newThemeColor}</span>
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="p-0 border-none bg-transparent shadow-none w-auto" side="bottom" align="start" sideOffset={8}>
+                                <ColorPicker 
+                                  color={newThemeColor}
+                                  onChange={setNewThemeColor}
+                                  onChangeComplete={handleApplyCustomTheme}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                         </div>
+                      </div>
+                      <Button 
+                        disabled={!newThemeName || createTheme.isPending}
+                        onClick={handleCreateTheme}
+                        className="w-full bg-primary text-black font-bold h-9 text-xs uppercase"
+                      >
+                         {createTheme.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                         {t('settings.saveTheme')}
+                      </Button>
+                   </div>
 
-              <button
-                onClick={() => audioFileRef.current?.click()}
-                disabled={uploading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-white/20 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors text-sm disabled:opacity-50"
-              >
-                <Upload className="w-4 h-4" />
-                {uploading ? t('settings.processing') : hasCustom ? t('settings.replaceAudio') : t('settings.uploadAudio')}
-              </button>
-              <input
-                ref={audioFileRef}
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                onChange={e => { const f = e.target.files?.[0]; if (f) handleAudioFile(f); }}
-              />
-              <p className="text-xs text-muted-foreground text-center">
-                {t('settings.audioHelp')}
-              </p>
+                   {/* Lista Temi */}
+                   <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                      {customThemes?.map(theme => (
+                        <div key={theme.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white/3 border border-white/5 group hover:bg-white/5">
+                           <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full shadow-[0_0_8px_white]" style={{ backgroundColor: theme.primaryColor }} />
+                              <span className="text-[11px] font-bold uppercase tracking-wider">{theme.brandName}</span>
+                           </div>
+                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button 
+                                variant="ghost" size="icon" 
+                                onClick={() => handleApplyCustomTheme(theme.primaryColor)}
+                                className="w-7 h-7 hover:text-primary"
+                              >
+                                <Palette className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button 
+                                variant="ghost" size="icon" 
+                                onClick={() => { if(confirm(t('settings.deleteThemeConfirm'))) deleteTheme.mutate(theme.id) }}
+                                className="w-7 h-7 hover:text-destructive"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            {/* 3. LINGUA */}
+            <div className="space-y-3">
+               <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground opacity-50 flex items-center">
+                <Globe className="w-3 h-3 mr-2" />
+                {t('settings.language')}
+              </label>
+              <div className="flex p-1 rounded-2xl bg-white/3 border border-white/5">
+                {[
+                  { id: 'it', label: t('settings.it'), flag: '🇮🇹' },
+                  { id: 'en', label: t('settings.en'), flag: '🇬🇧' }
+                ].map((lang) => {
+                  const active = i18n.language === lang.id;
+                  return (
+                    <button 
+                      key={lang.id}
+                      onClick={() => i18n.changeLanguage(lang.id)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all font-display text-[11px] uppercase tracking-widest font-bold
+                        ${active ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary),0.2)]' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      <span>{lang.flag}</span>
+                      {lang.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {!audioOn && (
-              <p className="text-xs text-muted-foreground text-center mt-3 italic">
-                {t('settings.soundDisabled')}
-              </p>
-            )}
+            {/* 4. SUONO LOGIN (PROGRESSIVE DISCLOSURE) */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${audioOn ? 'bg-primary/20 text-primary' : 'bg-white/5 text-muted-foreground'}`}>
+                    {audioOn ? <BellRing className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold uppercase">{t('settings.loginSound')}</h4>
+                    <p className="text-[10px] text-muted-foreground font-mono uppercase opacity-60">
+                      {audioOn ? t('settings.active') : t('common.close')}
+                    </p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={audioOn} 
+                  onCheckedChange={(val) => { setAudioEnabled(val); setAudioOn(val); }}
+                  className="data-[state=checked]:bg-primary"
+                />
+              </div>
+
+              {audioOn && (
+                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center justify-between gap-4">
+                     <div className="flex items-center gap-4 flex-1">
+                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center">
+                           <Music className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                           <p className="text-xs font-bold truncate uppercase">{hasCustom ? customAudioName : t('settings.defaultSound')}</p>
+                           <p className="text-[9px] font-mono text-muted-foreground uppercase opacity-70">
+                              {hasCustom ? t('settings.customAudioActive') : t('settings.synthesized')}
+                           </p>
+                        </div>
+                     </div>
+                     <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" size="icon" 
+                          onClick={() => playMotorcycleRevSound()} 
+                          className="h-9 w-9 border border-white/5 rounded-lg hover:bg-primary/20 hover:text-primary"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                        </Button>
+                        {hasCustom && (
+                          <Button 
+                            variant="ghost" size="icon" 
+                            onClick={() => { removeCustomLoginAudio(); removeCustomLoginAudioName(); setHasCustom(false); setCustomAudioName(null); }}
+                            className="h-9 w-9 border border-white/5 rounded-lg hover:bg-destructive/20 hover:text-destructive"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                     </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-dashed border-primary/40 hover:border-primary text-[10px] font-bold uppercase tracking-wider"
+                    onClick={() => audioFileRef.current?.click()}
+                    disabled={uploading}
+                  >
+                     {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-3.5 h-3.5 mr-2" />}
+                     {hasCustom ? t('settings.replaceAudio') : t('settings.uploadAudio')}
+                  </Button>
+                  <input ref={audioFileRef} type="file" accept="audio/*" className="hidden" onChange={e => {const f=e.target.files?.[0]; if(f) handleAudioFile(f);}} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Footer - Fixed */}
+        <DialogFooter className="p-4 border-t border-white/5 bg-black/40">
+           <Button 
+             onClick={onClose}
+             className="w-full bg-primary text-black font-display font-bold uppercase tracking-widest hover:shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all h-12 rounded-2xl"
+           >
+             {t('settings.done')}
+           </Button>
+        </DialogFooter>
       </DialogContent>
+
+      {/* SECONDARY MODAL: BRAND PICKER */}
+      <Dialog open={isBrandPickerOpen} onOpenChange={setIsBrandPickerOpen}>
+        <DialogContent className="bg-[#0D0D0D] border-white/10 text-foreground sm:max-w-[420px] p-6 rounded-3xl">
+          <DialogHeader>
+             <DialogTitle className="text-xl font-display uppercase text-gradient">{t('settings.chooseBrand')}</DialogTitle>
+             <p className="text-xs text-muted-foreground font-mono">{t('settings.brandTheme')}</p>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            {BRAND_THEMES.map((theme) => {
+              const isSelected = theme.id === brandId;
+              const color = BRAND_COLORS[theme.id as BrandId];
+              return (
+                <button
+                  key={theme.id}
+                  onClick={() => {
+                    localStorage.removeItem('motovault-custom-theme');
+                    setBrand(theme.id as BrandId);
+                    setIsBrandPickerOpen(false);
+                  }}
+                  className={`flex items-center flex-col gap-3 p-4 rounded-2xl border-2 transition-all duration-300 relative group
+                    ${isSelected 
+                      ? 'bg-primary/5 border-primary shadow-[0_0_15px_rgba(var(--primary),0.2)]' 
+                      : 'bg-white/3 border-white/5 hover:border-white/20 hover:scale-[1.02]'}`}
+                >
+                  <div 
+                    className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+                    style={{ backgroundColor: `${color}22`, border: `2px solid ${color}` }}
+                  >
+                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
+                  </div>
+                  <span className="font-bold text-[10px] uppercase tracking-widest">{theme.name}</span>
+                  {isSelected && <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />}
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--primary), 0.2); border-radius: 10px; }
+        .animate-spin-slow { animation: spin 8s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </Dialog>
   );
 }
@@ -240,13 +391,11 @@ export function SettingsTrigger({ collapsed }: { collapsed?: boolean }) {
   return (
     <>
       <button
-        data-testid="button-settings"
         onClick={() => setOpen(true)}
-        title={t('nav.settings')}
         className="flex items-center gap-3 px-4 py-3 w-full text-left rounded-xl font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
       >
         <Settings className="w-5 h-5 flex-shrink-0" />
-        {!collapsed && <span>{t('nav.settings')}</span>}
+        {!collapsed && <span className="text-xs uppercase font-bold tracking-tight">{t('nav.settings')}</span>}
       </button>
       <SettingsModal open={open} onClose={() => setOpen(false)} />
     </>

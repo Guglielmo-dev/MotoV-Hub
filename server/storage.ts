@@ -1,6 +1,6 @@
 import {
   users, motorcycles, maintenance, modifications,
-  communityPosts, communityComments, communityLikes, travelLogs,
+  communityPosts, communityComments, communityLikes, travelLogs, customThemes,
   type User, type InsertUser,
   type Motorcycle, type InsertMotorcycle,
   type Maintenance, type InsertMaintenance,
@@ -8,6 +8,7 @@ import {
   type CommunityPost, type InsertCommunityPost,
   type CommunityComment, type InsertCommunityComment,
   type TravelLog, type InsertTravelLog,
+  type CustomTheme, type InsertCustomTheme,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -60,6 +61,10 @@ export interface IStorage {
   createTravelLog(userId: number, data: InsertTravelLog): Promise<TravelLog>;
   updateTravelLog(id: number, userId: number, data: Partial<InsertTravelLog>): Promise<TravelLog>;
   deleteTravelLog(id: number, userId: number): Promise<void>;
+
+  getCustomThemes(userId: number): Promise<CustomTheme[]>;
+  createCustomTheme(userId: number, data: InsertCustomTheme): Promise<CustomTheme>;
+  deleteCustomTheme(id: number, userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -233,6 +238,23 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTravelLog(id: number, userId: number): Promise<void> {
     await db.delete(travelLogs).where(and(eq(travelLogs.id, id), eq(travelLogs.userId, userId)));
+  }
+
+  async getCustomThemes(userId: number): Promise<CustomTheme[]> {
+    return db.select().from(customThemes).where(eq(customThemes.userId, userId)).orderBy(desc(customThemes.createdAt));
+  }
+
+  async createCustomTheme(userId: number, data: InsertCustomTheme): Promise<CustomTheme> {
+    const existing = await this.getCustomThemes(userId);
+    if (existing.length >= 10) {
+      throw new Error("Limite di 10 temi raggiunto");
+    }
+    const [inserted] = await db.insert(customThemes).values({ ...data, userId }).returning();
+    return inserted;
+  }
+
+  async deleteCustomTheme(id: number, userId: number): Promise<void> {
+    await db.delete(customThemes).where(and(eq(customThemes.id, id), eq(customThemes.userId, userId)));
   }
 }
 

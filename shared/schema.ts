@@ -1,7 +1,13 @@
-import { pgTable, text, serial, integer, timestamp, numeric, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, numeric, boolean, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
+
+export const session = pgTable("session", {
+  sid: text("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { precision: 6 }).notNull(),
+});
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -86,11 +92,23 @@ export const travelLogs = pgTable("travel_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const customThemes = pgTable("custom_themes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  brandName: text("brand_name").notNull(),
+  primaryColor: text("primary_color").notNull(), // hex es. #FFD700
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type CustomTheme = typeof customThemes.$inferSelect;
+export type InsertCustomTheme = z.infer<typeof insertCustomThemeSchema>;
+
 export const usersRelations = relations(users, ({ many }) => ({
   motorcycles: many(motorcycles),
   communityPosts: many(communityPosts),
   communityComments: many(communityComments),
   travelLogs: many(travelLogs),
+  customThemes: many(customThemes),
 }));
 
 export const motorcyclesRelations = relations(motorcycles, ({ one, many }) => ({
@@ -122,6 +140,10 @@ export const travelLogsRelations = relations(travelLogs, ({ one }) => ({
   user: one(users, { fields: [travelLogs.userId], references: [users.id] }),
 }));
 
+export const customThemesRelations = relations(customThemes, ({ one }) => ({
+  user: one(users, { fields: [customThemes.userId], references: [users.id] }),
+}));
+
 export const insertUserSchema = createInsertSchema(users).pick({ username: true, password: true });
 export const insertMotorcycleSchema = createInsertSchema(motorcycles).omit({ id: true, userId: true, createdAt: true });
 export const insertMaintenanceSchema = createInsertSchema(maintenance).omit({ id: true, createdAt: true });
@@ -130,6 +152,8 @@ export const insertModificationSchema = createInsertSchema(modifications).omit({
 export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({ id: true, userId: true, createdAt: true });
 export const insertCommunityCommentSchema = createInsertSchema(communityComments).omit({ id: true, userId: true, createdAt: true });
 export const insertTravelLogSchema = createInsertSchema(travelLogs).omit({ id: true, userId: true, createdAt: true });
+export const insertCustomThemeSchema = createInsertSchema(customThemes)
+  .omit({ id: true, userId: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

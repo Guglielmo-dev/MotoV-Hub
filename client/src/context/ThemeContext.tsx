@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { type BrandId, type BrandTheme, applyTheme, getThemeById } from "@/lib/themes";
+import { type BrandId, type BrandTheme, applyTheme, getThemeById, applyCustomTheme } from "@/lib/themes";
 
 interface ThemeContextType {
   brandId: BrandId;
@@ -26,6 +26,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     applyTheme(theme);
     localStorage.setItem(STORAGE_KEY, brandId);
+    
+    // Controlla se esiste un tema custom salvato
+    const customTheme = localStorage.getItem('motovault-custom-theme');
+    if (customTheme) {
+      applyCustomTheme(customTheme);
+    }
   }, [brandId, theme]);
 
   const setBrand = (id: BrandId) => setBrandId(id);

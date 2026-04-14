@@ -15,7 +15,8 @@ import { rateLimit } from "express-rate-limit";
 import {
   insertCommunityPostSchema,
   insertCommunityCommentSchema,
-  insertTravelLogSchema
+  insertTravelLogSchema,
+  insertCustomThemeSchema
 } from "@shared/schema";
 
 const upload = multer({
@@ -597,6 +598,35 @@ export async function registerRoutes(
   app.delete('/api/travel/:id', requireAuth, async (req, res) => {
     const userId = (req.session as any).userId;
     await storage.deleteTravelLog(Number(req.params.id), userId);
+    res.status(204).send();
+  });
+
+  // ── Custom Theme Routes ───────────────────────────────────────────────────
+
+  app.get('/api/themes', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    const themes = await storage.getCustomThemes(userId);
+    res.json(themes);
+  });
+
+  app.post('/api/themes', requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const input = insertCustomThemeSchema.parse(req.body);
+      const theme = await storage.createCustomTheme(userId, input);
+      res.status(201).json(theme);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.errors[0].message });
+      } else {
+        res.status(400).json({ message: err instanceof Error ? err.message : 'Internal server error' });
+      }
+    }
+  });
+
+  app.delete('/api/themes/:id', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    await storage.deleteCustomTheme(Number(req.params.id), userId);
     res.status(204).send();
   });
 
