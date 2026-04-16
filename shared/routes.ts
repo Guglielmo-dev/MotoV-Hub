@@ -167,11 +167,16 @@ export const api = {
     summary: {
       method: 'GET' as const,
       path: '/api/dashboard' as const,
-      responses: {
+        responses: {
         200: z.object({
           motorcycleCount: z.number(),
           totalExpenses: z.number(),
           recentActivity: z.array(z.any()),
+          monthlyExpenses: z.array(z.object({
+            month: z.string(),
+            amount: z.number(),
+          })),
+          maintenanceSoon: z.array(z.any()),
         }),
         401: errorSchemas.unauthorized,
       },

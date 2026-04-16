@@ -12,6 +12,7 @@ export const routeImports = {
   MotorcycleDetails: () => import("@/pages/MotorcycleDetails").then(m => ({ default: m.MotorcycleDetails })),
   Community: () => import("@/pages/Community").then(m => ({ default: m.Community })),
   TravelDiary: () => import("@/pages/TravelDiary").then(m => ({ default: m.TravelDiary })),
+  Games: () => import("@/pages/Games").then(m => ({ default: m.Games })),
 };
 
 export type PageName = keyof typeof routeImports;

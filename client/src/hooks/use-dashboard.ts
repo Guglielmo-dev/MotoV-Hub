@@ -5,6 +5,8 @@ export interface DashboardSummary {
   motorcycleCount: number;
   totalExpenses: number;
   recentActivity: any[];
+  monthlyExpenses: { month: string; amount: number }[];
+  maintenanceSoon: any[];
 }
 
 export function useDashboardSummary() {

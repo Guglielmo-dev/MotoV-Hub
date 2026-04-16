@@ -18,6 +18,7 @@ import {
   insertTravelLogSchema,
   insertCustomThemeSchema
 } from "@shared/schema";
+import { subMonths, format, parse, isValid, startOfMonth } from 'date-fns';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -367,27 +368,103 @@ export async function registerRoutes(
     const motorcycles = await storage.getMotorcycles(userId);
     let totalExpenses = 0;
     const recentActivity = [];
+    const maintenanceSoon = [];
+
+    // Initialize monthly expenses for last 6 months using date-fns for robustness
+    const monthlyExpensesMap = new Map<string, number>();
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = subMonths(startOfMonth(now), i);
+      const monthKey = format(d, 'yyyy-MM');
+      monthlyExpensesMap.set(monthKey, 0);
+    }
+
+    const parseFlexibleDate = (dateStr: string) => {
+      if (!dateStr) return null;
+      // Try ISO first
+      let d = new Date(dateStr);
+      if (isValid(d)) return d;
+      
+      // Try M/D/YYYY (common in the app's current display)
+      d = parse(dateStr, 'M/d/yyyy', new Date());
+      if (isValid(d)) return d;
+
+      // Try D/M/YYYY
+      d = parse(dateStr, 'd/M/yyyy', new Date());
+      if (isValid(d)) return d;
+
+      return null;
+    };
 
     for (const mc of motorcycles) {
       const maintenance = await storage.getMaintenanceEvents(mc.id);
       const mods = await storage.getModifications(mc.id);
 
       for (const m of maintenance) {
-        totalExpenses += Number(m.cost);
-        recentActivity.push({ type: 'maintenance', date: m.date, description: `${m.title} on ${mc.brand} ${mc.model}`, cost: m.cost });
+        const cost = Number(m.cost);
+        totalExpenses += cost;
+        
+        const date = parseFlexibleDate(m.date);
+        if (date) {
+          const monthKey = format(date, 'yyyy-MM');
+          if (monthlyExpensesMap.has(monthKey)) {
+            monthlyExpensesMap.set(monthKey, (monthlyExpensesMap.get(monthKey) || 0) + cost);
+          }
+        }
+
+        recentActivity.push({ 
+          type: 'maintenance', 
+          date: m.date, 
+          title: m.title, 
+          description: `${m.title} on ${mc.brand} ${mc.model}`, 
+          cost: m.cost 
+        });
       }
+
       for (const m of mods) {
-        totalExpenses += Number(m.price);
-        recentActivity.push({ type: 'modification', date: m.installDate, description: `Installed ${m.title} on ${mc.brand} ${mc.model}`, cost: m.price });
+        const price = Number(m.price);
+        totalExpenses += price;
+
+        const date = parseFlexibleDate(m.installDate);
+        if (date) {
+          const monthKey = format(date, 'yyyy-MM');
+          if (monthlyExpensesMap.has(monthKey)) {
+            monthlyExpensesMap.set(monthKey, (monthlyExpensesMap.get(monthKey) || 0) + price);
+          }
+        }
+
+        recentActivity.push({ 
+          type: 'modification', 
+          date: m.installDate, 
+          title: `Mod: ${m.title}`,
+          description: `Installed ${m.title} on ${mc.brand} ${mc.model}`, 
+          cost: m.price 
+        });
       }
     }
 
-    recentActivity.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    recentActivity.sort((a, b) => {
+      const dateA = parseFlexibleDate(a.date);
+      const dateB = parseFlexibleDate(b.date);
+      return (dateB?.getTime() || 0) - (dateA?.getTime() || 0);
+    });
+
+    const formattedMonthlyExpenses = Array.from(monthlyExpensesMap.entries())
+      .map(([key, amount]) => {
+        const date = parse(key, 'yyyy-MM', new Date());
+        return {
+          month: format(date, 'MMM'),
+          amount
+        };
+      });
 
     res.json({
       motorcycleCount: motorcycles.length,
       totalExpenses,
-      recentActivity: recentActivity.slice(0, 10), // Top 10 recent
+      recentActivity: recentActivity.slice(0, 5),
+      monthlyExpenses: formattedMonthlyExpenses,
+      maintenanceSoon: recentActivity.filter(a => a.type === 'maintenance').slice(0, 3) // Placeholder for UI
     });
   });
 
