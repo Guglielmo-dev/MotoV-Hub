@@ -112,6 +112,7 @@ export const en = {
     apply: 'Apply',
     brandColors: 'Brand Colors',
     deleteThemeConfirm: 'Delete this theme?',
+    brandCustom: 'Custom',
     change: 'Change',
     active: 'Active',
     done: 'Done',

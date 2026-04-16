@@ -65,6 +65,8 @@ export interface IStorage {
   getCustomThemes(userId: number): Promise<CustomTheme[]>;
   createCustomTheme(userId: number, data: InsertCustomTheme): Promise<CustomTheme>;
   deleteCustomTheme(id: number, userId: number): Promise<void>;
+
+  updateUserPreferences(userId: number, prefs: Partial<Pick<User, 'audioEnabled' | 'customAudioData' | 'customAudioName' | 'activeBrandId' | 'activeCustomColor'>>): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -255,6 +257,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCustomTheme(id: number, userId: number): Promise<void> {
     await db.delete(customThemes).where(and(eq(customThemes.id, id), eq(customThemes.userId, userId)));
+  }
+
+  async updateUserPreferences(userId: number, prefs: Partial<User>): Promise<User> {
+    const [updated] = await db.update(users)
+      .set(prefs)
+      .where(eq(users.id, userId))
+      .returning();
+    return updated;
   }
 }
 

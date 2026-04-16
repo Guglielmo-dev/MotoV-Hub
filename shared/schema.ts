@@ -13,6 +13,12 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  // User Preferences
+  audioEnabled: boolean("audio_enabled").default(true),
+  customAudioData: text("custom_audio_data"),
+  customAudioName: text("custom_audio_name"),
+  activeBrandId: text("active_brand_id").default('kawasaki'),
+  activeCustomColor: text("active_custom_color"), // If set, activeBrandId should be treated as null
 });
 
 export const motorcycles = pgTable("motorcycles", {

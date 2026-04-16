@@ -5,10 +5,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { 
   Settings, Check, Upload, X, Volume2, Music, VolumeX, Plus, 
-  Trash2, Palette, Loader2, ChevronRight, Globe, BellRing 
+  Trash2, Palette, Loader2, Globe, BellRing 
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
-import { BRAND_THEMES, BRAND_COLORS, type BrandId, applyCustomTheme, getThemeById } from "@/lib/themes";
+import { BRAND_THEMES, BRAND_COLORS, type BrandId } from "@/lib/themes";
 import {
   setCustomLoginAudio, removeCustomLoginAudio,
   setCustomLoginAudioName, removeCustomLoginAudioName,
@@ -17,8 +17,10 @@ import {
 } from "@/lib/sound";
 import { useTranslation } from "react-i18next";
 import { useCustomThemes, useCreateCustomTheme, useDeleteCustomTheme } from "@/hooks/use-custom-themes";
+import { useUpdatePreferences } from "@/hooks/use-preferences";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 interface SettingsModalProps {
   open: boolean;
@@ -26,11 +28,13 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ open, onClose }: SettingsModalProps) {
-  const { brandId, setBrand } = useTheme();
+  const { brandId, setBrand, customColor, setCustomColor } = useTheme();
+  const { data: user } = useAuth();
+  const updatePrefs = useUpdatePreferences();
   const audioFileRef = useRef<HTMLInputElement>(null);
   const { t, i18n } = useTranslation();
 
-  // Settings State
+  // Audio State (Synced with localStorage and optionally user profile)
   const [customAudioName, setCustomAudioName] = useState<string | null>(getCustomLoginAudioName);
   const [hasCustom, setHasCustom] = useState(hasCustomLoginAudio);
   const [uploading, setUploading] = useState(false);
@@ -38,39 +42,34 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [isBrandPickerOpen, setIsBrandPickerOpen] = useState(false);
 
   // Custom Themes State
-  const { data: customThemes, isLoading: themesLoading } = useCustomThemes();
+  const { data: customThemes } = useCustomThemes();
   const createTheme = useCreateCustomTheme();
   const deleteTheme = useDeleteCustomTheme();
-  const [showNewTheme, setShowNewTheme] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [newThemeName, setNewThemeName] = useState("");
   const [newThemeColor, setNewThemeColor] = useState("#FFD700");
 
+  const isCustomActive = brandId === 'custom';
   const currentBrand = BRAND_THEMES.find(b => b.id === brandId);
-  const brandColor = BRAND_COLORS[brandId];
+  
+  // Resolve primary color for the UI
+  const displayColor = isCustomActive ? (customColor || '#FFFFFF') : (BRAND_COLORS[brandId as keyof typeof BRAND_COLORS] || BRAND_COLORS['kawasaki']);
 
-  // Sync theme preview correctly
-  useEffect(() => {
-    if (!showNewTheme) {
-      const saved = localStorage.getItem('motovault-custom-theme');
-      if (saved) applyCustomTheme(saved);
-      else applyCustomTheme(BRAND_COLORS[brandId]);
-    }
-  }, [showNewTheme, brandId]);
-
-  const handleApplyCustomTheme = (color: string) => {
-    applyCustomTheme(color);
-    localStorage.setItem('motovault-custom-theme', color);
+  const handleApplyBrand = (id: BrandId) => {
+    setBrand(id);
+    updatePrefs.mutate({ activeBrandId: id, activeCustomColor: null });
+    setIsBrandPickerOpen(false);
   };
 
-  const handleCreateTheme = async () => {
-    if (!newThemeName.trim()) return;
-    await createTheme.mutateAsync({
-      brandName: newThemeName.toUpperCase(),
-      primaryColor: newThemeColor,
-    });
-    setNewThemeName("");
-    setShowNewTheme(false);
+  const handleApplyCustom = (color: string) => {
+    setCustomColor(color);
+    updatePrefs.mutate({ activeCustomColor: color, activeBrandId: null });
+  };
+
+  const handleToggleAudio = (enabled: boolean) => {
+    setAudioEnabled(enabled);
+    setAudioOn(enabled);
+    updatePrefs.mutate({ audioEnabled: enabled });
   };
 
   const handleAudioFile = (file: File) => {
@@ -84,54 +83,80 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       setCustomAudioName(file.name);
       setHasCustom(true);
       setUploading(false);
+      
+      // Save to persistence
+      updatePrefs.mutate({ 
+        customAudioData: dataUrl, 
+        customAudioName: file.name 
+      });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAudio = () => {
+    removeCustomLoginAudio();
+    removeCustomLoginAudioName();
+    setHasCustom(false);
+    setCustomAudioName(null);
+    updatePrefs.mutate({ 
+      customAudioData: null, 
+      customAudioName: null 
+    });
+  };
+
+  const handleCreateTheme = async () => {
+    if (!newThemeName.trim()) return;
+    await createTheme.mutateAsync({
+      brandName: newThemeName.toUpperCase(),
+      primaryColor: newThemeColor,
+    });
+    setNewThemeName("");
   };
 
   return (
     <Dialog open={open} onOpenChange={o => !o && onClose()}>
       <DialogContent className="bg-[#0A0A0A] border-white/10 text-foreground sm:max-w-[480px] p-0 overflow-hidden border-t-2 border-t-primary/60 rounded-t-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-        {/* Header - Fixed */}
+        {/* Header */}
         <DialogHeader className="p-6 pb-4 border-b border-white/5">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <DialogTitle className="text-2xl font-display uppercase flex items-center gap-2">
-                <Settings className="w-5 h-5 text-primary animate-[spin-slow_8s_linear_infinite]" />
-                <span className="text-gradient tracking-tight">{t('settings.title')}</span>
-              </DialogTitle>
-              <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest opacity-60">
-                {t('settings.subtitle')}
-              </p>
-            </div>
+          <div className="space-y-1">
+            <DialogTitle className="text-2xl font-display uppercase flex items-center gap-2">
+              <Settings className="w-5 h-5 text-primary animate-[spin-slow_8s_linear_infinite]" />
+              <span className="text-gradient tracking-tight">{t('settings.title')}</span>
+            </DialogTitle>
+            <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest opacity-60">
+              {t('settings.subtitle')}
+            </p>
           </div>
         </DialogHeader>
 
-        {/* Content - Scrollable */}
+        {/* Content */}
         <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
           <div className="p-6 py-4 space-y-6">
             
-            {/* 1. SEZIONE BRAND (COMPATTA) */}
+            {/* 1. SEZIONE TEMA (DINAMICA) */}
             <div className="space-y-3">
                <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground opacity-50 flex items-center">
                 <Palette className="w-3 h-3 mr-2 text-primary" />
                 {t('settings.brandTheme')}
               </label>
+              
               <div className="flex items-center justify-between p-3 rounded-2xl bg-white/3 border border-white/5 group hover:border-primary/30 transition-all">
                 <div className="flex items-center gap-4">
                   <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.1)]"
-                    style={{ backgroundColor: `${brandColor}11`, borderColor: brandColor }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center border-2 shadow-[0_0_15px_rgba(var(--primary),0.1)] transition-colors duration-500"
+                    style={{ backgroundColor: `${displayColor}11`, borderColor: displayColor }}
                   >
-                    <div className="w-3 h-3 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" style={{ backgroundColor: brandColor }} />
+                    <div className="w-3 h-3 rounded-full shadow-[0_0_8px_white]" style={{ backgroundColor: displayColor }} />
                   </div>
                   <div>
                     <p className="text-xs font-mono text-muted-foreground uppercase">{t('settings.active')}</p>
-                    <p className="font-display font-bold text-sm uppercase tracking-wider">{currentBrand?.name}</p>
+                    <p className="font-display font-bold text-sm uppercase tracking-wider">
+                      {isCustomActive ? t('settings.brandCustom') : (currentBrand?.name || 'Kawasaki')}
+                    </p>
                   </div>
                 </div>
                 <Button 
-                  variant="outline" 
-                  size="sm" 
+                  variant="outline" size="sm" 
                   onClick={() => setIsBrandPickerOpen(true)}
                   className="bg-primary/5 border-primary/20 text-primary hover:bg-primary hover:text-black font-bold text-[10px] uppercase rounded-lg h-8 px-4"
                 >
@@ -140,7 +165,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               </div>
             </div>
 
-            {/* 2. I MIEI TEMI (ACCORDION) */}
+            {/* 2. I MIEI TEMI */}
             <Accordion type="single" collapsible className="w-full space-y-2 border-none">
               <AccordionItem value="custom-themes" className="border-none">
                 <AccordionTrigger className="flex p-3 rounded-2xl bg-white/3 border border-white/5 hover:bg-white/5 transition-all hover:no-underline">
@@ -155,7 +180,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-3 pb-1 px-1 space-y-3">
-                   {/* Form Nuovo Tema */}
                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-4">
                       <div className="grid grid-cols-2 gap-3">
                          <div className="space-y-1.5">
@@ -180,7 +204,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                                 <ColorPicker 
                                   color={newThemeColor}
                                   onChange={setNewThemeColor}
-                                  onChangeComplete={handleApplyCustomTheme}
+                                  onChangeComplete={handleApplyCustom}
                                 />
                               </PopoverContent>
                             </Popover>
@@ -196,32 +220,35 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                       </Button>
                    </div>
 
-                   {/* Lista Temi */}
                    <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                      {customThemes?.map(theme => (
-                        <div key={theme.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white/3 border border-white/5 group hover:bg-white/5">
-                           <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full shadow-[0_0_8px_white]" style={{ backgroundColor: theme.primaryColor }} />
-                              <span className="text-[11px] font-bold uppercase tracking-wider">{theme.brandName}</span>
-                           </div>
-                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button 
-                                variant="ghost" size="icon" 
-                                onClick={() => handleApplyCustomTheme(theme.primaryColor)}
-                                className="w-7 h-7 hover:text-primary"
-                              >
-                                <Palette className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button 
-                                variant="ghost" size="icon" 
-                                onClick={() => { if(confirm(t('settings.deleteThemeConfirm'))) deleteTheme.mutate(theme.id) }}
-                                className="w-7 h-7 hover:text-destructive"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                           </div>
-                        </div>
-                      ))}
+                      {customThemes?.map(theme => {
+                        const isActive = isCustomActive && customColor === theme.primaryColor;
+                        return (
+                          <div key={theme.id} className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${isActive ? 'bg-primary/5 border-primary/30' : 'bg-white/3 border-white/5 group hover:bg-white/5'}`}>
+                             <div className="flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full shadow-[0_0_8px_white]" style={{ backgroundColor: theme.primaryColor }} />
+                                <span className={`text-[11px] font-bold uppercase tracking-wider ${isActive ? 'text-primary' : ''}`}>{theme.brandName}</span>
+                                {isActive && <span className="text-[8px] font-mono text-primary animate-pulse ml-2">ACTIVE</span>}
+                             </div>
+                             <div className={`flex items-center gap-1 transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                <Button 
+                                  variant="ghost" size="icon" 
+                                  onClick={() => handleApplyCustom(theme.primaryColor)}
+                                  className="w-7 h-7 hover:text-primary"
+                                >
+                                  <Palette className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" size="icon" 
+                                  onClick={() => { if(confirm(t('settings.deleteThemeConfirm'))) deleteTheme.mutate(theme.id) }}
+                                  className="w-7 h-7 hover:text-destructive"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                             </div>
+                          </div>
+                        );
+                      })}
                    </div>
                 </AccordionContent>
               </AccordionItem>
@@ -254,11 +281,11 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               </div>
             </div>
 
-            {/* 4. SUONO LOGIN (PROGRESSIVE DISCLOSURE) */}
+            {/* 4. SUONO LOGIN */}
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${audioOn ? 'bg-primary/20 text-primary' : 'bg-white/5 text-muted-foreground'}`}>
+                  <div className={`p-2 rounded-lg transition-colors ${audioOn ? 'bg-primary/20 text-primary' : 'bg-white/5 text-muted-foreground'}`}>
                     {audioOn ? <BellRing className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                   </div>
                   <div>
@@ -270,7 +297,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </div>
                 <Switch 
                   checked={audioOn} 
-                  onCheckedChange={(val) => { setAudioEnabled(val); setAudioOn(val); }}
+                  onCheckedChange={handleToggleAudio}
                   className="data-[state=checked]:bg-primary"
                 />
               </div>
@@ -278,12 +305,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               {audioOn && (
                 <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center justify-between gap-4">
-                     <div className="flex items-center gap-4 flex-1">
-                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center">
+                     <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center flex-shrink-0 border border-white/5">
                            <Music className="w-4 h-4 text-primary" />
                         </div>
                         <div className="min-w-0">
-                           <p className="text-xs font-bold truncate uppercase">{hasCustom ? customAudioName : t('settings.defaultSound')}</p>
+                           <p className="text-xs font-bold truncate uppercase">{hasCustom ? (customAudioName || t('settings.customAudioNameFallback')) : t('settings.defaultSound')}</p>
                            <p className="text-[9px] font-mono text-muted-foreground uppercase opacity-70">
                               {hasCustom ? t('settings.customAudioActive') : t('settings.synthesized')}
                            </p>
@@ -300,7 +327,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                         {hasCustom && (
                           <Button 
                             variant="ghost" size="icon" 
-                            onClick={() => { removeCustomLoginAudio(); removeCustomLoginAudioName(); setHasCustom(false); setCustomAudioName(null); }}
+                            onClick={handleRemoveAudio}
                             className="h-9 w-9 border border-white/5 rounded-lg hover:bg-destructive/20 hover:text-destructive"
                           >
                             <X className="w-4 h-4" />
@@ -324,7 +351,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           </div>
         </div>
 
-        {/* Footer - Fixed */}
+        {/* Footer */}
         <DialogFooter className="p-4 border-t border-white/5 bg-black/40">
            <Button 
              onClick={onClose}
@@ -335,7 +362,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         </DialogFooter>
       </DialogContent>
 
-      {/* SECONDARY MODAL: BRAND PICKER */}
       <Dialog open={isBrandPickerOpen} onOpenChange={setIsBrandPickerOpen}>
         <DialogContent className="bg-[#0D0D0D] border-white/10 text-foreground sm:max-w-[420px] p-6 rounded-3xl">
           <DialogHeader>
@@ -344,16 +370,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3 mt-4">
             {BRAND_THEMES.map((theme) => {
-              const isSelected = theme.id === brandId;
-              const color = BRAND_COLORS[theme.id as BrandId];
+              const isSelected = !isCustomActive && theme.id === brandId;
+              const color = BRAND_COLORS[theme.id as keyof typeof BRAND_COLORS];
               return (
                 <button
                   key={theme.id}
-                  onClick={() => {
-                    localStorage.removeItem('motovault-custom-theme');
-                    setBrand(theme.id as BrandId);
-                    setIsBrandPickerOpen(false);
-                  }}
+                  onClick={() => handleApplyBrand(theme.id)}
                   className={`flex items-center flex-col gap-3 p-4 rounded-2xl border-2 transition-all duration-300 relative group
                     ${isSelected 
                       ? 'bg-primary/5 border-primary shadow-[0_0_15px_rgba(var(--primary),0.2)]' 
@@ -373,14 +395,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           </div>
         </DialogContent>
       </Dialog>
-      
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--primary), 0.2); border-radius: 10px; }
-        .animate-spin-slow { animation: spin 8s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
     </Dialog>
   );
 }

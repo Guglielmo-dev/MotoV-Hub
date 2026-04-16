@@ -1,4 +1,4 @@
-export type BrandId = 'kawasaki' | 'ducati' | 'bmw' | 'honda' | 'yamaha' | 'harley';
+export type BrandId = 'kawasaki' | 'ducati' | 'bmw' | 'honda' | 'yamaha' | 'harley' | 'custom';
 
 export interface BrandTheme {
   id: BrandId;
@@ -114,9 +114,12 @@ export function applyCustomTheme(primaryHex: string) {
   root.style.setProperty('--accent', hsl);
   root.style.setProperty('--ring', hsl);
   root.style.setProperty('--chart-1', hsl);
+  // Reset other properties to a neutral state or derived from primary
+  root.style.setProperty('--chart-2', hsl); 
+  root.style.setProperty('--primary-shadow-rgb', '255, 255, 255');
 }
 
-export const BRAND_COLORS: Record<BrandId, string> = {
+export const BRAND_COLORS: Record<string, string> = {
   kawasaki: '#00B140',
   ducati: '#CC0000',
   bmw: '#0166B1',

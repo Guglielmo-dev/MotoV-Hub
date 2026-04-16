@@ -707,5 +707,29 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // ── User Preferences Routes ───────────────────────────────────────────────
+
+  app.patch('/api/user/preferences', requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const schema = z.object({
+        audioEnabled: z.boolean().optional(),
+        customAudioData: z.string().optional(),
+        customAudioName: z.string().optional(),
+        activeBrandId: z.string().optional().nullable(),
+        activeCustomColor: z.string().optional().nullable(),
+      });
+      const input = schema.parse(req.body);
+      const updated = await storage.updateUserPreferences(userId, input);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.errors[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    }
+  });
+
   return httpServer;
 }
