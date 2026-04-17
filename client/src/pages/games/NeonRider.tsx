@@ -24,16 +24,155 @@ interface RainDrop {
   length: number;
 }
 
+interface GoldParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+}
+
+interface FloatingText {
+  x: number;
+  y: number;
+  text: string;
+  life: number;
+}
+
+interface Splash {
+  x: number;
+  y: number;
+  life: number;
+}
+
+interface SkylineBuilding {
+  x: number;
+  width: number;
+  height: number;
+  signs: number[];
+  windows: { x: number; y: number; state: boolean }[];
+}
+
+interface SpeedLine {
+  x: number;
+  y: number;
+  length: number;
+  opacity: number;
+  isRight: boolean;
+}
+
+class AudioEngine {
+  ctx: AudioContext | null = null;
+  engineOsc: OscillatorNode | null = null;
+  engineGain: GainNode | null = null;
+
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
+  startEngine(speed: number) {
+    if (!this.ctx) return;
+    this.stopEngine();
+    this.engineOsc = this.ctx.createOscillator();
+    this.engineOsc.type = 'sawtooth';
+    this.engineGain = this.ctx.createGain();
+    this.engineGain.gain.value = 0.04;
+    this.engineOsc.connect(this.engineGain);
+    this.engineGain.connect(this.ctx.destination);
+    this.engineOsc.frequency.value = 80 + speed * 15;
+    this.engineOsc.start();
+  }
+
+  updateEngine(speed: number) {
+    if (this.engineOsc && this.ctx) {
+      this.engineOsc.frequency.setTargetAtTime(80 + speed * 15, this.ctx.currentTime, 0.1);
+    }
+  }
+
+  stopEngine() {
+    if (this.engineOsc) {
+      this.engineOsc.stop();
+      this.engineOsc.disconnect();
+      this.engineOsc = null;
+    }
+  }
+
+  playCoin() {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    
+    osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+    osc.frequency.setValueAtTime(1320, this.ctx.currentTime + 0.08);
+    
+    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.16);
+    
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.16);
+  }
+
+  playNearMiss() {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    
+    osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.15);
+    
+    gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+    
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.15);
+  }
+
+  playGameOver() {
+    if (!this.ctx) return;
+    this.stopEngine();
+    const ctx = this.ctx;
+    const freqs = [440, 330, 220, 110];
+    const duration = 0.12;
+    
+    freqs.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.08, ctx.currentTime + (i * duration));
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + ((i + 1) * duration));
+      
+      osc.start(ctx.currentTime + (i * duration));
+      osc.stop(ctx.currentTime + ((i + 1) * duration));
+    });
+  }
+}
+
 export function NeonRider({ onBack }: NeonRiderProps) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<'start' | 'playing' | 'gameover'>('start');
   const [score, setScore] = useState(0);
   const [displayScore, setDisplayScore] = useState(0);
+  const [comboMultiplier, setComboMultiplier] = useState(1);
   const [highScore, setHighScore] = useState(() => Number(localStorage.getItem('neon-rider-highscore') || 0));
-  const [primaryColor, setPrimaryColor] = useState('#00FF41'); // Default fallback
+  const [primaryColor, setPrimaryColor] = useState('#00FF41');
+  const audioRef = useRef(new AudioEngine());
 
-  // Helper to safely handle transparency with both HEX and RGB colors
   const safeAlpha = (color: string, alpha: number) => {
     if (color.startsWith('rgb')) {
       return color.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
@@ -41,9 +180,8 @@ export function NeonRider({ onBack }: NeonRiderProps) {
     return color.length === 7 ? `${color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}` : color;
   };
 
-  // Game Logic Ref
   const gameRef = useRef({
-    lane: 1, // 0, 1, 2
+    lane: 1,
     lanesCount: 3,
     targetLane: 1,
     laneWidth: 0,
@@ -51,9 +189,15 @@ export function NeonRider({ onBack }: NeonRiderProps) {
     bikeY: 0,
     bikeWidth: 40,
     bikeHeight: 80,
-    obstacles: [] as { x: number, y: number, type: 'block' | 'coin', id: number, color?: string, vehicleType?: 'car' | 'suv' | 'moto' }[],
+    bikeLean: 0,
+    obstacles: [] as { x: number, y: number, type: 'block' | 'coin', id: number, color?: string, vehicleType?: 'car' | 'suv' | 'moto' | 'truck', nearMissed?: boolean }[],
     particles: [] as Particle[],
     rain: [] as RainDrop[],
+    splashes: [] as Splash[],
+    goldParticles: [] as GoldParticle[],
+    floatingTexts: [] as FloatingText[],
+    buildings: [] as SkylineBuilding[],
+    speedLines: [] as SpeedLine[],
     speed: 5,
     frameCount: 0,
     lastTime: 0,
@@ -61,9 +205,10 @@ export function NeonRider({ onBack }: NeonRiderProps) {
     uiFlash: { type: 'none' as 'none' | 'damage' | 'coin', timer: 0 },
     primaryColor: '#00FF41',
     shake: 0,
+    comboCount: 0,
+    multiplier: 1,
   });
 
-  // Get theme color on mount
   useEffect(() => {
     const color = getComputedStyle(document.documentElement).getPropertyValue('--primary');
     const temp = document.createElement('div');
@@ -75,21 +220,61 @@ export function NeonRider({ onBack }: NeonRiderProps) {
     gameRef.current.primaryColor = resolvedColor;
   }, []);
 
+  useEffect(() => {
+    return () => {
+      audioRef.current.stopEngine();
+    };
+  }, []);
+
   const startGame = () => {
+    audioRef.current.init();
+    
+    // Setup skyline buildings
+    const newBuildings: SkylineBuilding[] = Array.from({ length: 16 }).map((_, i) => {
+      const w = 20 + Math.random() * 30;
+      const h = 30 + Math.random() * 60;
+      const x = i * (400 / 16); 
+      const isTall = h > 60;
+      const signs = isTall ? [Math.random() * 20 + 10] : [];
+      const windows = [];
+      for(let wy = 10; wy < h; wy += 8) {
+         for(let wx = 4; wx < w-4; wx += 8) {
+           windows.push({x: wx, y: wy, state: Math.random() > 0.4});
+         }
+      }
+      return { x, width: w, height: h, signs, windows };
+    });
+
+    // Setup speed lines
+    const newSpeedLines: SpeedLine[] = Array.from({length: 16}).map((_, i) => ({
+      x: i < 8 ? Math.random() * 30 : 0, 
+      y: Math.random() * 600,
+      length: 0, opacity: 0,
+      isRight: i >= 8
+    }));
+
     setGameState('playing');
     setScore(0);
     setDisplayScore(0);
+    setComboMultiplier(1);
+    
     gameRef.current = {
       ...gameRef.current,
       lane: 1,
       targetLane: 1,
+      bikeLean: 0,
       obstacles: [],
       particles: [],
-      rain: Array.from({ length: 30 }, () => ({
+      splashes: [],
+      goldParticles: [],
+      floatingTexts: [],
+      buildings: newBuildings,
+      speedLines: newSpeedLines,
+      rain: Array.from({ length: 60 }, () => ({
         x: Math.random() * 800,
         y: Math.random() * 800,
-        speed: 10 + Math.random() * 10,
-        length: 15 + Math.random() * 10
+        speed: 12 + Math.random() * 6,
+        length: 8 + Math.random() * 8
       })),
       speed: 5,
       frameCount: 0,
@@ -97,7 +282,11 @@ export function NeonRider({ onBack }: NeonRiderProps) {
       lastTime: performance.now(),
       uiFlash: { type: 'none', timer: 0 },
       shake: 0,
+      comboCount: 0,
+      multiplier: 1,
     };
+
+    audioRef.current.startEngine(5);
   };
 
   useEffect(() => {
@@ -114,6 +303,11 @@ export function NeonRider({ onBack }: NeonRiderProps) {
       canvas.width = canvas.parentElement?.clientWidth || 400;
       canvas.height = canvas.parentElement?.clientHeight || 600;
       gameRef.current.laneWidth = canvas.width / gameRef.current.lanesCount;
+      
+      // Update speedlines right side based on true width
+      gameRef.current.speedLines.forEach(sl => {
+        if (sl.isRight) sl.x = canvas.width - 30 + Math.random() * 30;
+      });
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -139,7 +333,6 @@ export function NeonRider({ onBack }: NeonRiderProps) {
     canvas.addEventListener('touchstart', handleTouch);
     handleResize();
 
-    // Helper functions for drawing
     const drawShadow = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.beginPath();
@@ -147,19 +340,54 @@ export function NeonRider({ onBack }: NeonRiderProps) {
       ctx.fill();
     };
 
-    const drawBike = (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, alpha: number = 1, scale: number = 1) => {
+    const drawBike = (ctx: CanvasRenderingContext2D, x: number, y: number, color: string, alpha: number = 1, scale: number = 1, rotation: number = 0) => {
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(scale, scale);
+      ctx.rotate(rotation);
       ctx.globalAlpha = alpha;
+
+      // Headlight Cone (Step 4)
+      if (alpha === 1) {
+        const coneGrad = ctx.createLinearGradient(0, -25, 0, -90);
+        coneGrad.addColorStop(0, 'rgba(255,255,255,0.25)');
+        coneGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = coneGrad;
+        ctx.beginPath();
+        ctx.moveTo(0, -25);
+        ctx.lineTo(-25, -90);
+        ctx.lineTo(25, -90);
+        ctx.fill();
+
+        // Exhaust Flames (Step 4)
+        const offset = Math.random() * 4 - 2;
+        const eHeight = 12 + Math.random() * 6;
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.ellipse(offset, 32 + eHeight/2, 4, eHeight, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath(); ctx.ellipse(offset, 32 + eHeight/2 + 2, 2, eHeight - 4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = alpha;
+      }
 
       if (alpha === 1) drawShadow(ctx, 15, 30);
 
-      // Glow
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = color;
+      // Outer Wide Glow
+      if (alpha === 1) {
+        ctx.save();
+        ctx.shadowBlur = 60;
+        ctx.shadowColor = color;
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.4;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 9, 22, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
 
-      // Main Body (Carena)
+      // Main Body
+      ctx.shadowBlur = 35;
+      ctx.shadowColor = color;
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.ellipse(0, 0, 9, 22, 0, 0, Math.PI * 2);
@@ -188,7 +416,7 @@ export function NeonRider({ onBack }: NeonRiderProps) {
       ctx.ellipse(0, 0, 5, 7, 0, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
 
-      // Headlight
+      // Headlight core
       ctx.shadowBlur = 10;
       ctx.shadowColor = 'white';
       ctx.fillStyle = 'white';
@@ -210,8 +438,9 @@ export function NeonRider({ onBack }: NeonRiderProps) {
       ctx.translate(x, y);
       ctx.scale(scale, scale);
       
-      const w = type === 'suv' ? 35 : 28;
-      const h = type === 'suv' ? 55 : 50;
+      const isTruck = type === 'truck';
+      const w = (type === 'suv' || isTruck) ? 38 : 32;
+      const h = (type === 'suv' || isTruck) ? 65 : 52;
 
       drawShadow(ctx, w*0.8, h*0.8);
 
@@ -220,14 +449,14 @@ export function NeonRider({ onBack }: NeonRiderProps) {
       ctx.shadowColor = color;
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.roundRect(-w/2, -h/2, w, h, 6);
+      ctx.roundRect(-w/2, -h/2, w, h, 4);
       ctx.fill();
 
       // Roof
       ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(0,0,0,0.3)';
       ctx.beginPath();
-      ctx.roundRect(-w/2 + 4, -h/2 + 10, w - 8, h - 22, 4);
+      ctx.roundRect(-10, -14, 20, 28, 4);
       ctx.fill();
 
       // Wheels
@@ -236,20 +465,39 @@ export function NeonRider({ onBack }: NeonRiderProps) {
         ctx.fillRect(wx, wy, 6, 10);
       });
 
-      // Lights
-      ctx.shadowBlur = 8;
+      // Truck Details (Step 5)
+      if (isTruck) {
+        ctx.fillStyle = '#FFA500';
+        for(let sy = -h/2 + 5; sy < h/2 - 5; sy += 10) {
+           ctx.fillRect(-w/2, sy, 2, 8);
+           ctx.fillRect(w/2 - 2, sy, 2, 8);
+        }
+      }
+
+      // Headlight Cones (Step 5)
+      const cGrad = ctx.createLinearGradient(0, -h/2, 0, -h/2 - 80);
+      cGrad.addColorStop(0, 'rgba(255,255,200,0.15)');
+      cGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = cGrad;
+      ctx.beginPath(); ctx.moveTo(-w/2 + 4, -h/2); ctx.lineTo(-w/2 - 2, -h/2 - 80); ctx.lineTo(-w/2 + 10, -h/2 - 80); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(w/2 - 4, -h/2); ctx.lineTo(w/2 - 10, -h/2 - 80); ctx.lineTo(w/2 + 2, -h/2 - 80); ctx.fill();
+
+      // Core Lights
+      ctx.shadowBlur = 10;
       ctx.shadowColor = 'white';
       ctx.fillStyle = 'white';
       ctx.beginPath();
-      ctx.arc(-w/2 + 4, -h/2 + 4, 2, 0, Math.PI * 2);
-      ctx.arc(w/2 - 4, -h/2 + 4, 3, 0, Math.PI * 2);
+      ctx.arc(-w/2 + 6, -h/2 + 6, 3, 0, Math.PI * 2);
+      ctx.arc(w/2 - 6, -h/2 + 6, 3, 0, Math.PI * 2);
       ctx.fill();
 
+      // Taillights Pulsing (Step 5)
+      ctx.shadowBlur = 8;
       ctx.shadowColor = '#FF0000';
-      ctx.fillStyle = '#FF0000';
+      ctx.fillStyle = `rgba(255,0,0,${0.7 + Math.sin(Date.now() * 0.01) * 0.3})`;
       ctx.beginPath();
-      ctx.arc(-w/2 + 4, h/2 - 4, 2, 0, Math.PI * 2);
-      ctx.arc(w/2 - 4, h/2 - 4, 2, 0, Math.PI * 2);
+      ctx.arc(-w/2 + 6, h/2 - 6, 3, 0, Math.PI * 2);
+      ctx.arc(w/2 - 6, h/2 - 6, 3, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
@@ -270,9 +518,8 @@ export function NeonRider({ onBack }: NeonRiderProps) {
 
     const draw = (time: number) => {
       const g = gameRef.current;
-      const deltaTime = time - g.lastTime;
-      g.lastTime = time;
       g.frameCount++;
+      g.lastTime = time;
 
       const horizon = 50;
       const centerX = canvas.width / 2;
@@ -282,36 +529,45 @@ export function NeonRider({ onBack }: NeonRiderProps) {
       };
       const getPerspectiveScale = (y: number) => 0.4 + (0.6 * (y / canvas.height));
 
-      // Update bike position
+      // Update bike position and lean (Step 4)
       const targetX = g.targetLane * g.laneWidth + (g.laneWidth / 2);
       g.bikeX += (targetX - g.bikeX) * 0.15;
       g.bikeY = canvas.height - 150;
+      
+      const diff = targetX - g.bikeX;
+      let desiredLean = 0;
+      if (Math.abs(diff) > 2) desiredLean = diff > 0 ? 15 : -15;
+      g.bikeLean += (desiredLean - g.bikeLean) * 0.15;
 
-      // Update Lane Offset (Movement effect)
+      // Update Audio Engine Engine Sound (Step 8)
+      audioRef.current.updateEngine(g.speed);
+
       g.laneOffset = (g.laneOffset + g.speed) % 70;
 
-      // Spawn obstacles
+      // Spawn obstacles (Step 5)
       if (g.frameCount % Math.max(25, Math.floor(70 - g.speed * 3)) === 0) {
         const lane = Math.floor(Math.random() * g.lanesCount);
         const isCoin = Math.random() > 0.8;
-        const vehicleColors = ['#C0392B','#2980B9','#8E44AD','#E67E22','#27AE60'];
-        const vehicleType = Math.random() > 0.7 ? 'suv' : 'car';
+        const isTruck = !isCoin && Math.random() > 0.95;
+        const vehicleColors = ['#C0392B','#2980B9','#8E44AD','#E67E22','#27AE60', '#1a1a1a'];
+        const vType = isTruck ? 'truck' : (Math.random() > 0.7 ? 'suv' : 'car');
+        const vColor = isTruck ? '#2C3E50' : vehicleColors[Math.floor(Math.random() * vehicleColors.length)];
         
         g.obstacles.push({
           id: Date.now() + Math.random(),
           x: lane * g.laneWidth + (g.laneWidth / 2),
           y: -100,
           type: isCoin ? 'coin' : 'block',
-          color: vehicleColors[Math.floor(Math.random() * vehicleColors.length)],
-          vehicleType: vehicleType as any
+          color: vColor,
+          vehicleType: vType as any,
+          nearMissed: false
         });
       }
 
       // Update entities
       g.obstacles.forEach((obs, index) => {
-        obs.y += g.speed;
+        obs.y += g.speed * (obs.vehicleType === 'truck' ? 0.7 : 1);
         
-        // Visual Position for collision (consistency with 3D look)
         const visualObsX = getPerspectiveX(obs.x, obs.y);
         const visualBikeX = getPerspectiveX(g.bikeX, g.bikeY);
         
@@ -319,42 +575,86 @@ export function NeonRider({ onBack }: NeonRiderProps) {
         const dy = Math.abs(g.bikeY - obs.y);
         
         const collisionYRange = obs.type === 'coin' ? 30 : 45;
-        const collisionXRange = obs.type === 'coin' ? 25 : 35;
+        const collisionXRange = obs.type === 'coin' ? 25 : 30;
 
+        // Collision detection
         if (dx < collisionXRange && dy < collisionYRange) {
           if (obs.type === 'coin') {
-            setScore(s => s + 10);
+            g.comboCount++;
+            if (g.comboCount >= 3) {
+              const newMult = Math.min(3, Math.floor(g.comboCount / 3) + 1);
+              if (newMult !== g.multiplier) {
+                 g.multiplier = newMult;
+                 setComboMultiplier(newMult);
+              }
+            }
+            setScore(s => s + (10 * g.multiplier));
+            
+            // Premium Coin bursts (Step 6)
+            g.floatingTexts.push({ x: visualObsX, y: obs.y - 20, text: `+${10 * g.multiplier}`, life: 30 });
+            audioRef.current.playCoin();
+            for(let i=0; i<8; i++) {
+               const a = (Math.PI*2/8)*i;
+               g.goldParticles.push({x: visualObsX, y: obs.y, vx: Math.cos(a)*3, vy: Math.sin(a)*3, life: 15});
+            }
+
             g.uiFlash = { type: 'coin', timer: 2 };
-            spawnParticles(visualObsX, obs.y, '#FFD700', 8);
             g.obstacles.splice(index, 1);
             g.speed += 0.05;
           } else {
             g.uiFlash = { type: 'damage', timer: 5 };
             g.shake = 10;
             spawnParticles(visualBikeX, g.bikeY, g.primaryColor, 15);
+            audioRef.current.playGameOver();
             setGameState('gameover');
           }
         }
+        
+        // Near Miss (Step 8)
+        if (obs.type === 'block' && !obs.nearMissed && dy < 20 && dx > collisionXRange && dx < collisionXRange + 40) {
+          obs.nearMissed = true;
+          audioRef.current.playNearMiss();
+        }
+
         if (obs.y > canvas.height + 100) {
+          if (obs.type === 'block') {
+            const val = obs.vehicleType === 'truck' ? 3 : 1;
+            setScore(s => s + (val * g.multiplier));
+            // Break combo multiplier
+            g.comboCount = 0;
+            if (g.multiplier !== 1) {
+              g.multiplier = 1;
+              setComboMultiplier(1);
+            }
+          }
           g.obstacles.splice(index, 1);
-          if (obs.type === 'block') setScore(s => s + 1);
         }
       });
 
-      // Update particles
-      g.particles.forEach((p, i) => {
-        p.x += p.vx; p.y += p.vy; p.life--;
-        if (p.life <= 0) g.particles.splice(i, 1);
+      // Update Arrays
+      g.particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if (p.life <= 0) g.particles.splice(i, 1); });
+      g.goldParticles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if (p.life <= 0) g.goldParticles.splice(i, 1); });
+      g.floatingTexts.forEach((ft, i) => { ft.y -= 1; ft.life--; if (ft.life <= 0) g.floatingTexts.splice(i, 1); });
+      
+      // Rain Update (Step 3)
+      g.rain.forEach(drop => {
+        drop.y += drop.speed;
+        drop.x += 1; // Diagonal wind
+        
+        if (drop.y > canvas.height - 20 && drop.y - drop.speed <= canvas.height - 20) {
+           g.splashes.push({x: drop.x, y: canvas.height - 20, life: 4});
+        }
+        if (drop.y > canvas.height) { drop.y = -20; drop.x = Math.random() * canvas.width; }
       });
-
-      // Update rain
-      if (score > 50) {
-        g.rain.forEach(drop => {
-          drop.y += drop.speed;
-          drop.x += 1;
-          if (drop.y > canvas.height) { drop.y = -20; drop.x = Math.random() * canvas.width; }
-        });
-      }
+      g.splashes.forEach((sp, i) => { sp.life--; if (sp.life <= 0) g.splashes.splice(i, 1); });
+      
+      // Speed lines update (Step 7)
+      g.speedLines.forEach(sl => {
+        sl.y += g.speed * 2;
+        sl.length = (g.speed / 5) * 40;
+        sl.opacity = Math.min(1, (g.speed / 20) * 0.6);
+        if (sl.y > canvas.height) { sl.y = -50; sl.x = sl.isRight ? canvas.width - 30 + Math.random()*30 : Math.random()*30; }
+      });
 
       // --- RENDERING ---
       ctx.save();
@@ -366,91 +666,184 @@ export function NeonRider({ onBack }: NeonRiderProps) {
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Background - Asphalt base
-      ctx.fillStyle = '#0a0a0a';
+      // Background
+      const bgGrad = ctx.createLinearGradient(0, canvas.height * 0.15, 0, canvas.height);
+      bgGrad.addColorStop(0, '#050508');
+      bgGrad.addColorStop(1, '#0a0a10');
+      ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Asphalt Texture
-      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-      ctx.lineWidth = 1;
-      for (let i = 0; i < canvas.height; i += 4) {
-        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
-      }
-
-      // 3D Perspective simulation (drawing lanes)
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
       
+      // Puddle Glow (Step 2)
+      ctx.fillStyle = `rgba(0,255,65,${(Math.sin(g.frameCount * 0.02) * 0.5 + 0.5) * 0.03})`;
+      ctx.fillRect(0, canvas.height * 0.7, canvas.width, canvas.height * 0.3);
+
+      // Skyline (Step 1)
+      const skylineH = canvas.height * 0.15;
+      g.buildings.forEach(b => {
+        const bx = (b.x / 400) * canvas.width;
+        const bw = (b.width / 400) * canvas.width;
+        const bh = (b.height / 100) * skylineH;
+        ctx.fillStyle = '#0a0a12';
+        ctx.fillRect(bx, skylineH - bh, bw, bh);
+        
+        b.windows.forEach(w => {
+           if (Math.random() > 0.995) w.state = !w.state;
+           ctx.fillStyle = w.state ? safeAlpha(g.primaryColor, 0.4) : 'rgba(255,255,255,0.05)';
+           ctx.fillRect(bx + w.x, skylineH - bh + w.y, 2, 3);
+        });
+
+        b.signs.forEach(sy => {
+           const signColors = ['#FF1493', '#00FFFF', '#FF8C00'];
+           const c = signColors[Math.floor(sy % signColors.length)];
+           ctx.shadowBlur = 8; ctx.shadowColor = c; ctx.strokeStyle = c; ctx.lineWidth = 3;
+           ctx.beginPath(); ctx.moveTo(bx + 4, skylineH - bh + sy); ctx.lineTo(bx + bw - 4, skylineH - bh + sy); ctx.stroke();
+           ctx.shadowBlur = 0;
+        });
+      });
+
+      // Asphalt Texture (Removed horizontal lines, keeping road clean)
+
+
+      // Lanes and Reflections (Step 2)
+      ctx.lineWidth = 2;
       for (let i = 0; i <= g.lanesCount; i++) {
         const laneX = i * g.laneWidth;
         const bottomX = laneX;
         const topX = centerX + (laneX - centerX) * 0.4;
         
+        // Main line
         ctx.beginPath();
         if (i > 0 && i < g.lanesCount) {
           ctx.setLineDash([40, 30]);
           ctx.lineDashOffset = -g.frameCount * g.speed;
         } else {
           ctx.setLineDash([]);
-          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
         }
-        
-        ctx.moveTo(topX, horizon);
+        ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+        ctx.moveTo(topX, skylineH);
         ctx.lineTo(bottomX, canvas.height);
         ctx.stroke();
+        
+        // Wet Reflection line
+        if (i > 0 && i < g.lanesCount) {
+           ctx.save();
+           ctx.globalAlpha = 0.3;
+           ctx.translate(0, 20); // Shift reflection down
+           ctx.strokeStyle = 'rgba(255,255,255,0.5)'; // Brighter base to be faded by alpha
+           
+           // Simple gradient for fade
+           const rGrad = ctx.createLinearGradient(0, canvas.height/2, 0, canvas.height);
+           rGrad.addColorStop(0, 'rgba(255,255,255,0.8)');
+           rGrad.addColorStop(1, 'rgba(255,255,255,0)');
+           ctx.strokeStyle = rGrad;
+           
+           ctx.beginPath();
+           ctx.moveTo(topX, skylineH);
+           ctx.lineTo(bottomX, canvas.height);
+           ctx.stroke();
+           ctx.restore();
+        }
       }
       ctx.setLineDash([]);
 
-      // Horizon Glow
-      const horizonGrad = ctx.createLinearGradient(0, 0, 0, 150);
-      horizonGrad.addColorStop(0, safeAlpha(g.primaryColor, 0.15));
+      const horizonGrad = ctx.createLinearGradient(0, skylineH - 20, 0, skylineH + 100);
+      horizonGrad.addColorStop(0, safeAlpha(g.primaryColor, 0.2));
       horizonGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = horizonGrad;
-      ctx.fillRect(0, 0, canvas.width, 150);
+      ctx.fillRect(0, skylineH - 20, canvas.width, 120);
 
-      // Draw Entities with Perspective
+      // Draw Entities
       g.obstacles.forEach(obs => {
         const px = getPerspectiveX(obs.x, obs.y);
         const ps = getPerspectiveScale(obs.y);
 
+        // Vehicle Reflection (Step 2)
+        ctx.save();
+        ctx.translate(px, obs.y + (obs.type === 'coin' ? 20 : 35));
+        const oGrad = ctx.createRadialGradient(0,0,0, 0,0, 25);
+        oGrad.addColorStop(0, safeAlpha(obs.color || '#FFF', 0.05));
+        oGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = oGrad;
+        ctx.beginPath(); ctx.ellipse(0,0,25,10 * ps,0,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+
         if (obs.type === 'coin') {
+          // Magnetic Aura (Step 6)
+          const laneDiff = Math.abs((obs.x - g.laneWidth/2)/g.laneWidth - g.targetLane);
+          if (laneDiff < 0.5 && obs.y > g.bikeY - 150 && obs.y < g.bikeY + 20) {
+              for(let j=1; j<=3; j++) {
+                 ctx.strokeStyle = `rgba(255, 215, 0, ${0.4 - j*0.1})`;
+                 ctx.lineWidth = 1.5;
+                 ctx.beginPath();
+                 const r = 12 + j * 8;
+                 ctx.arc(px, obs.y + j*(g.speed), r * ps, 0, Math.PI*2);
+                 ctx.stroke();
+              }
+          }
+          
+          // Premium Coin (Step 6)
           ctx.save();
           ctx.translate(px, obs.y);
-          const rotationScale = Math.abs(Math.cos(g.frameCount * 0.1));
-          ctx.scale(rotationScale * ps, 1 * ps);
+          ctx.scale(Math.abs(Math.cos(g.frameCount * 0.08)) * ps, 1 * ps);
           
-          drawShadow(ctx, 12, 12);
-          ctx.shadowBlur = 20;
-          ctx.shadowColor = '#FFD700';
-          ctx.fillStyle = '#FFD700';
-          ctx.strokeStyle = '#FFA500';
-          ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          const coinGrad = ctx.createRadialGradient(0,0,0, 0,0,14);
+          coinGrad.addColorStop(0, '#FFE566');
+          coinGrad.addColorStop(1, '#CC8800');
+          ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 25;
+          ctx.fillStyle = coinGrad;
+          ctx.beginPath(); ctx.arc(0,0,14,0,Math.PI*2); ctx.fill();
           
-          ctx.fillStyle = '#8B6914';
-          ctx.font = 'bold 8px font-mono';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('V', 0, 0);
+          ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(0,0,14,0,Math.PI*2); ctx.stroke();
+          
+          ctx.shadowBlur = 0; ctx.fillStyle = '#8B6000';
+          ctx.font = 'bold 16px font-display'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('V', 0, 1);
           ctx.restore();
         } else {
           drawVehicle(ctx, px, obs.y, obs.color!, obs.vehicleType!, ps);
         }
       });
 
-      // Draw Bike with Perspective and Blur
+      // Bike Reflection (Step 2)
       const bikePX = getPerspectiveX(g.bikeX, g.bikeY);
       const bikePS = getPerspectiveScale(g.bikeY);
+      
+      ctx.save();
+      ctx.translate(bikePX, g.bikeY + g.bikeHeight/2 + 5);
+      const bGrad = ctx.createRadialGradient(0,0,0, 0,0, 30);
+      bGrad.addColorStop(0, safeAlpha(g.primaryColor, 0.3));
+      bGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = bGrad;
+      ctx.beginPath(); ctx.ellipse(0, 0, 30, 10, 0, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
 
+      // Bike Trails & Main Bike
       for (let i = 4; i > 0; i--) {
         const trailY = g.bikeY + (i * 12);
         const trailX = getPerspectiveX(g.bikeX, trailY);
         const trailS = getPerspectiveScale(trailY) * (1 - (i * 0.05));
         const trailAlpha = 0.3 / i;
-        drawBike(ctx, trailX, trailY, g.primaryColor, trailAlpha, trailS);
+        drawBike(ctx, trailX, trailY, g.primaryColor, trailAlpha, trailS, 0);
       }
-      drawBike(ctx, bikePX, g.bikeY, g.primaryColor, 1, bikePS);
+      
+      const leanAngle = (g.bikeLean * Math.PI) / 180;
+      drawBike(ctx, bikePX, g.bikeY, g.primaryColor, 1, bikePS, leanAngle);
 
-      // Particles
+      // Gold Particles (Step 6)
+      g.goldParticles.forEach(p => {
+        ctx.fillStyle = `rgba(255, 215, 0, ${p.life/15})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
+      });
+
+      // Floating Texts (Step 6)
+      g.floatingTexts.forEach(ft => {
+        ctx.fillStyle = `rgba(255, 215, 0, ${ft.life/30})`;
+        ctx.font = 'bold 14px font-display'; ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+      });
+
+      // Regular Particles
       g.particles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.life / p.maxLife;
@@ -458,32 +851,54 @@ export function NeonRider({ onBack }: NeonRiderProps) {
         ctx.globalAlpha = 1;
       });
 
-      // Rain
-      if (score > 50) {
-        ctx.strokeStyle = 'rgba(174,194,224,0.3)';
-        g.rain.forEach(drop => {
-          ctx.beginPath(); ctx.moveTo(drop.x, drop.y); ctx.lineTo(drop.x + 2, drop.y + drop.length); ctx.stroke();
-        });
-      }
-
-      // Speed lines
-      if (g.speed > 8) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        for (let i = 0; i < 5; i++) {
-          const sx = i % 2 === 0 ? 10 : canvas.width - 20;
-          const sy = (g.frameCount * 20 + i * 100) % canvas.height;
-          ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + 10, sy); ctx.stroke();
+      // Rain & Splashes (Step 3)
+      ctx.strokeStyle = 'rgba(150,200,255,0.2)';
+      ctx.lineWidth = 0.5;
+      g.rain.forEach(drop => {
+        ctx.beginPath(); ctx.moveTo(drop.x, drop.y); ctx.lineTo(drop.x + 2, drop.y + drop.length); ctx.stroke();
+      });
+      ctx.lineWidth = 1;
+      g.splashes.forEach(sp => {
+        ctx.strokeStyle = `rgba(150,200,255,${sp.life/4 * 0.5})`;
+        ctx.beginPath();
+        for(let a=0; a<Math.PI; a+=Math.PI/4) {
+           ctx.moveTo(sp.x, sp.y); ctx.lineTo(sp.x + Math.cos(a)*2, sp.y - Math.sin(a)*2);
         }
-      }
+        ctx.stroke();
+      });
 
-      // UI Flashes
+      // Speed Lines Lateral (Step 7)
+      ctx.lineWidth = 2;
+      g.speedLines.forEach(sl => {
+        ctx.strokeStyle = safeAlpha(g.primaryColor, sl.opacity);
+        ctx.beginPath(); ctx.moveTo(sl.x, sl.y); ctx.lineTo(sl.x, sl.y + sl.length); ctx.stroke();
+      });
+
+      // HUD Speedometer (Step 9)
+      ctx.save();
+      ctx.translate(50, canvas.height - 40);
+      ctx.beginPath();
+      ctx.arc(0, 0, 30, Math.PI * 0.8, Math.PI * 2.2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 4; ctx.stroke();
+      
+      const speedRatio = Math.min(1, g.speed / 20);
+      ctx.beginPath();
+      ctx.arc(0, 0, 30, Math.PI * 0.8, Math.PI * 0.8 + ((Math.PI * 1.4) * speedRatio));
+      ctx.strokeStyle = g.primaryColor; ctx.stroke();
+      
+      ctx.fillStyle = 'white'; ctx.font = 'bold 12px font-mono'; ctx.textAlign = 'center';
+      ctx.fillText(Math.floor(g.speed * 10).toString(), 0, -4);
+      ctx.fillStyle = g.primaryColor; ctx.font = '8px font-mono';
+      ctx.fillText('KM/H', 0, 6);
+      ctx.restore();
+
       if (g.uiFlash.timer > 0) {
         ctx.fillStyle = g.uiFlash.type === 'damage' ? 'rgba(255,0,0,0.2)' : 'rgba(255,215,0,0.15)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         g.uiFlash.timer--;
       }
 
-      ctx.restore(); // Restore shake transform
+      ctx.restore();
 
       if (gameState === 'playing') {
         animationId = requestAnimationFrame(draw);
@@ -500,7 +915,6 @@ export function NeonRider({ onBack }: NeonRiderProps) {
     };
   }, [gameState, score]);
 
-  // Handle count-up for score
   useEffect(() => {
     if (gameState === 'gameover' && displayScore < score) {
       const step = Math.ceil((score - displayScore) / 10);
@@ -518,7 +932,6 @@ export function NeonRider({ onBack }: NeonRiderProps) {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-500">
-      {/* HUD Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/5 bg-black/40 backdrop-blur-md">
         <button 
           onClick={onBack}
@@ -533,20 +946,23 @@ export function NeonRider({ onBack }: NeonRiderProps) {
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mb-1">{t('games.neonRider.highScore')}</p>
             <p className="text-xl font-black font-display text-primary leading-none">{highScore.toLocaleString()}</p>
           </div>
-          <div className="text-center">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mb-1">{t('games.neonRider.score')}</p>
-            <p className="text-3xl font-black font-display text-white leading-none tabular-nums">{score.toLocaleString()}</p>
+          <div className="text-center flex items-baseline gap-2">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mb-1">{t('games.neonRider.score')}</p>
+              <p className="text-3xl font-black font-display text-white leading-none tabular-nums">{score.toLocaleString()}</p>
+            </div>
+            {comboMultiplier > 1 && (
+               <span className="text-xl font-black text-[#FFD700] animate-pulse">x{comboMultiplier}</span>
+            )}
           </div>
         </div>
 
-        <div className="w-24" /> {/* Spacer */}
+        <div className="w-24" />
       </div>
 
-      {/* Game Area */}
       <div className="flex-1 relative overflow-hidden bg-black">
         <canvas ref={canvasRef} className="w-full h-full block cursor-none" />
 
-        {/* Overlays */}
         {gameState === 'start' && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in zoom-in duration-300">
             <div className="text-center space-y-6 max-w-sm px-6">
@@ -631,7 +1047,6 @@ export function NeonRider({ onBack }: NeonRiderProps) {
         )}
       </div>
 
-      {/* Footer / Mobile Tap Zones */}
       <div className="h-24 bg-black/40 border-t border-white/5 flex items-stretch">
         <div 
           onClick={() => gameRef.current.targetLane = Math.max(0, gameRef.current.targetLane - 1)}
