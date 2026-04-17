@@ -45,8 +45,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     >
       {/* Header */}
       <div className={`flex items-center border-b border-white/5 h-20 relative ${collapsed ? 'justify-center px-0' : 'px-6 gap-3'}`}>
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 glow-green rotate-3">
-          <Bike className="w-6 h-6 text-black -rotate-3" />
+        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 glow-green">
+          <Bike className="w-6 h-6 text-black" />
         </div>
         {!collapsed && (
           <div className="flex flex-col">
@@ -104,10 +104,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </nav>
 
       {/* User Session Block */}
-      <div className={`p-4 mx-4 mb-4 rounded-2xl surface-premium border border-white/5 ${collapsed ? 'px-2' : ''}`}>
+      <div className="border-y border-white/5 py-6 my-2">
         {isLoading ? (
-          <div className={`flex items-center animate-pulse ${collapsed ? 'justify-center' : 'gap-3 px-2'}`}>
-            <div className="w-10 h-10 rounded-full bg-white/5 flex-shrink-0" />
+          <div className={`flex items-center animate-pulse ${collapsed ? 'justify-center' : 'gap-3 px-6'}`}>
+            <div className="w-9 h-9 rounded-full bg-white/5 flex-shrink-0" />
             {!collapsed && (
               <div className="space-y-2 flex-1">
                 <div className="h-4 bg-white/5 rounded w-3/4" />
@@ -116,20 +116,20 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             )}
           </div>
         ) : user ? (
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-1'}`} title={collapsed ? user.username : undefined}>
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-6'}`} title={collapsed ? user.username : undefined}>
             <div 
-              className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-black border border-primary/40 flex items-center justify-center flex-shrink-0 text-primary font-black text-sm shadow-inner"
+              className="w-9 h-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm"
             >
               {getInitials(user.username)}
             </div>
             {!collapsed && (
               <div className="flex flex-col min-w-0">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-foreground truncate">
+                <span className="text-sm font-display font-bold uppercase tracking-wider text-foreground truncate">
                   {user.username}
                 </span>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgb(16,185,129)]" />
-                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
                     {t('common.online')}
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Bottom Actions */}
-      <div className={`pb-6 space-y-2 ${collapsed ? 'px-3' : 'px-4'}`}>
+      <div className={`pb-6 space-y-2 mt-auto ${collapsed ? 'px-3' : 'px-4'}`}>
         <SettingsTrigger collapsed={collapsed} />
         <button
           onClick={() => logout()}

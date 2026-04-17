@@ -1,6 +1,11 @@
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, X, MapPin, Calendar, BookOpen, Navigation, Sparkles, CheckCircle2, Circle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
@@ -71,13 +76,13 @@ export function TravelFormDialog({ open, onClose, existing }: TravelFormDialogPr
             <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
               <Navigation className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-2xl font-black font-display uppercase tracking-tight">
+            <DialogTitle className="text-2xl font-black font-display uppercase tracking-tight">
               {existing ? t('travel.editJourney') : t('travel.logJourney')}
-            </h2>
+            </DialogTitle>
           </div>
-          <p className="text-muted-foreground text-sm font-medium">
+          <DialogDescription className="text-muted-foreground text-sm font-medium">
             {form.isUpcoming ? t('travel.plannedTripDesc') : t('travel.subtitle')}
-          </p>
+          </DialogDescription>
         </div>
 
         <form onSubmit={e => { e.preventDefault(); save(form); }} className="p-8 space-y-8 max-h-[70vh] overflow-y-auto scrollbar-hide">

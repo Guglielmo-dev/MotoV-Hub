@@ -76,7 +76,7 @@ export function Dashboard() {
         />
         <StatCard 
           title={t('dashboard.totalKilometers')} 
-          value="12.450" 
+          value={(summary?.totalMileage || 0).toLocaleString()} 
           icon={Map}
         />
         <StatCard 

@@ -459,9 +459,12 @@ export async function registerRoutes(
         };
       });
 
+    const totalMileage = motorcycles.reduce((sum, mc) => sum + (mc.mileage || 0), 0);
+
     res.json({
       motorcycleCount: motorcycles.length,
       totalExpenses,
+      totalMileage,
       recentActivity: recentActivity.slice(0, 5),
       monthlyExpenses: formattedMonthlyExpenses,
       maintenanceSoon: recentActivity.filter(a => a.type === 'maintenance').slice(0, 3) // Placeholder for UI

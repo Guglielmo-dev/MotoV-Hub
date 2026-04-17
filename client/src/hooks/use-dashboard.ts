@@ -4,6 +4,7 @@ import { api } from "@shared/routes";
 export interface DashboardSummary {
   motorcycleCount: number;
   totalExpenses: number;
+  totalMileage: number;
   recentActivity: any[];
   monthlyExpenses: { month: string; amount: number }[];
   maintenanceSoon: any[];

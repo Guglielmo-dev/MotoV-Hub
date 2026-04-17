@@ -64,14 +64,14 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="md:hidden fixed inset-0 bg-background/95 backdrop-blur-sm z-30 pt-20 px-4">
           {/* User Profile Mobile */}
           {user && (
-            <div className="flex items-center gap-4 pt-4 pb-6 border-b border-white/5 mb-6">
+            <div className="flex items-center gap-4 pt-4 pb-6 border-b border-white/5 mb-6 px-2">
               <div 
-                className="w-12 h-12 rounded-full bg-[var(--primary)]/20 border border-[var(--primary)]/40 flex items-center justify-center flex-shrink-0 text-[var(--primary)] font-bold text-lg"
+                className="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center flex-shrink-0 text-primary font-bold text-base"
               >
                 {getInitials(user.username)}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-xl font-display font-bold uppercase tracking-wider text-foreground truncate">
+                <span className="text-lg font-display font-bold uppercase tracking-wider text-foreground truncate leading-none mb-1">
                   {user.username}
                 </span>
                 <div className="flex items-center gap-2">
