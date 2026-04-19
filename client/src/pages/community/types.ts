@@ -16,6 +16,7 @@ export interface Comment {
   id: number;
   postId: number;
   userId: number;
+  parentId?: number | null;
   content: string;
   createdAt: string | null;
   authorUsername: string;

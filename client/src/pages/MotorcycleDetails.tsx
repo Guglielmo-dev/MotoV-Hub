@@ -2,6 +2,17 @@ import { useState } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useMotorcycle, useUpdateMotorcycle, useDeleteMotorcycle } from "@/hooks/use-motorcycles";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, ArrowLeft, Trash2, Wrench, PenTool, Settings, FileText } from "lucide-react";
 import { ImageUploadField } from "@/components/ui/ImageUploadField";
@@ -11,7 +22,6 @@ import { MaintenanceTab } from "./motorcycle/MaintenanceTab";
 import { ModificationsTab } from "./motorcycle/ModificationsTab";
 import { NFTSection } from "./motorcycle/NFTSection";
 import { SpecsTab } from "./motorcycle/SpecsTab";
-import { DocumentsTab } from "./motorcycle/DocumentsTab";
 
 export function MotorcycleDetails() {
   const [, params] = useRoute("/garage/:id");
@@ -21,7 +31,7 @@ export function MotorcycleDetails() {
   const { data: bike, isLoading: bikeLoading } = useMotorcycle(id);
   const { mutate: updateBike } = useUpdateMotorcycle();
   const { mutate: deleteBike } = useDeleteMotorcycle();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [isPhotoEditOpen, setIsPhotoEditOpen] = useState(false);
   const [newPhotoUrl, setNewPhotoUrl] = useState('');
@@ -34,9 +44,7 @@ export function MotorcycleDetails() {
   };
 
   const handleDeleteBike = () => {
-    if(confirm(t('motorcycleDetails.confirmScrap'))) {
-      deleteBike(id, { onSuccess: () => setLocation('/garage') });
-    }
+    deleteBike(id, { onSuccess: () => setLocation('/garage') });
   };
 
   return (
@@ -103,9 +111,36 @@ export function MotorcycleDetails() {
             
             <div className="flex gap-2">
               <NFTSection nftContractAddress={bike.nftContractAddress} onConnect={handleLinkNFT} />
-              <button onClick={handleDeleteBike} className="p-3 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white rounded-xl transition-all">
-                <Trash2 className="w-5 h-5" />
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="p-3 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white rounded-xl transition-all">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-card border-white/10 text-foreground sm:max-w-[425px] overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-destructive/80" />
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-xl font-display uppercase text-destructive tracking-tight mt-2 flex items-center gap-2">
+                      <Trash2 className="w-5 h-5" />
+                      {i18n.language === 'it' ? "Rottama Veicolo" : "Scrap Vehicle"}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-muted-foreground/80 font-mono mt-3 opacity-90">
+                      {t('motorcycleDetails.confirmScrap')}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="mt-6 flex flex-row justify-end space-x-3 w-full">
+                    <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white rounded-xl">
+                      {i18n.language === 'it' ? "Annulla" : "Cancel"}
+                    </AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDeleteBike} 
+                      className="bg-destructive text-white hover:bg-destructive/90 rounded-xl"
+                    >
+                      {i18n.language === 'it' ? "Conferma" : "Confirm"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>
@@ -122,9 +157,6 @@ export function MotorcycleDetails() {
           <TabsTrigger value="details" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg py-3 px-6 min-h-[44px]">
             <Settings className="w-4 h-4 mr-2" /> {t('motorcycleDetails.details')}
           </TabsTrigger>
-          <TabsTrigger value="documents" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg py-3 px-6 min-h-[44px]">
-            <FileText className="w-4 h-4 mr-2" /> {t('motorcycleDetails.documents')}
-          </TabsTrigger>
         </TabsList>
 
         <div className="mt-8">
@@ -138,10 +170,6 @@ export function MotorcycleDetails() {
 
           <TabsContent value="details">
             <SpecsTab bike={bike} />
-          </TabsContent>
-
-          <TabsContent value="documents">
-            <DocumentsTab id={id} bike={bike} />
           </TabsContent>
         </div>
       </Tabs>

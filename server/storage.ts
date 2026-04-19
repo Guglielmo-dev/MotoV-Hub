@@ -1,6 +1,6 @@
 import {
   users, motorcycles, maintenance, modifications,
-  communityPosts, communityComments, communityLikes, travelLogs, customThemes,
+  communityPosts, communityComments, communityLikes, travelLogs, customThemes, ratings,
   type User, type InsertUser,
   type Motorcycle, type InsertMotorcycle,
   type Maintenance, type InsertMaintenance,
@@ -9,9 +9,10 @@ import {
   type CommunityComment, type InsertCommunityComment,
   type TravelLog, type InsertTravelLog,
   type CustomTheme, type InsertCustomTheme,
+  type Rating, type InsertRating,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface CommunityPostWithMeta extends CommunityPost {
   authorUsername: string;
@@ -27,7 +28,9 @@ export interface CommentWithAuthor extends CommunityComment {
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  deleteUser(id: number): Promise<void>;
 
   getMotorcycles(userId: number): Promise<Motorcycle[]>;
   getMotorcycle(id: number): Promise<Motorcycle | undefined>;
@@ -52,7 +55,7 @@ export interface IStorage {
   deleteCommunityPost(id: number, userId: number): Promise<void>;
 
   getCommunityComments(postId: number): Promise<CommentWithAuthor[]>;
-  createCommunityComment(postId: number, userId: number, content: string): Promise<CommentWithAuthor>;
+  createCommunityComment(postId: number, userId: number, content: string, parentId?: number): Promise<CommentWithAuthor>;
   deleteCommunityComment(id: number, userId: number): Promise<void>;
 
   toggleCommunityLike(postId: number, userId: number): Promise<{ liked: boolean; likeCount: number }>;
@@ -67,6 +70,11 @@ export interface IStorage {
   deleteCustomTheme(id: number, userId: number): Promise<void>;
 
   updateUserPreferences(userId: number, prefs: Partial<Pick<User, 'audioEnabled' | 'customAudioData' | 'customAudioName' | 'activeBrandId' | 'activeCustomColor'>>): Promise<User>;
+
+  // Ratings
+  getAverageRating(targetType: string, targetId: string): Promise<{ average: number; count: number }>;
+  getUserRating(userId: number, targetType: string, targetId: string): Promise<number | null>;
+  upsertRating(userId: number, rating: InsertRating): Promise<Rating>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -76,13 +84,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db.select().from(users).where(sql`lower(${users.username}) = lower(${username})`);
+    return user || undefined;
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
     return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async getMotorcycles(userId: number): Promise<Motorcycle[]> {
@@ -198,8 +215,8 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async createCommunityComment(postId: number, userId: number, content: string): Promise<CommentWithAuthor> {
-    const [inserted] = await db.insert(communityComments).values({ postId, userId, content }).returning();
+  async createCommunityComment(postId: number, userId: number, content: string, parentId?: number): Promise<CommentWithAuthor> {
+    const [inserted] = await db.insert(communityComments).values({ postId, userId, content, parentId }).returning();
     const [author] = await db.select().from(users).where(eq(users.id, userId));
     return { ...inserted, authorUsername: author?.username ?? 'Unknown' };
   }
@@ -265,6 +282,58 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return updated;
+  }
+
+  // Ratings Implementation
+  async getAverageRating(targetType: string, targetId: string): Promise<{ average: number; count: number }> {
+    const results = await db.select().from(ratings).where(
+      and(
+        eq(ratings.targetType, targetType),
+        eq(ratings.targetId, targetId)
+      )
+    );
+
+    if (results.length === 0) return { average: 0, count: 0 };
+
+    const sum = results.reduce((acc, r) => acc + r.score, 0);
+    return {
+      average: Number((sum / results.length).toFixed(1)),
+      count: results.length
+    };
+  }
+
+  async getUserRating(userId: number, targetType: string, targetId: string): Promise<number | null> {
+    const [rating] = await db.select().from(ratings).where(
+      and(
+        eq(ratings.userId, userId),
+        eq(ratings.targetType, targetType),
+        eq(ratings.targetId, targetId)
+      )
+    );
+    return rating ? rating.score : null;
+  }
+
+  async upsertRating(userId: number, insertRating: InsertRating): Promise<Rating> {
+    const [existing] = await db.select().from(ratings).where(
+      and(
+        eq(ratings.userId, userId),
+        eq(ratings.targetType, insertRating.targetType),
+        eq(ratings.targetId, insertRating.targetId)
+      )
+    );
+
+    if (existing) {
+      const [updated] = await db.update(ratings)
+        .set({ score: insertRating.score })
+        .where(eq(ratings.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [newRating] = await db.insert(ratings)
+      .values({ ...insertRating, userId })
+      .returning();
+    return newRating;
   }
 }
 

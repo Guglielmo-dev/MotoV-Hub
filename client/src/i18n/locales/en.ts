@@ -23,6 +23,8 @@ export const en = {
   auth: {
     login: 'Login',
     register: 'Register',
+    loginWithGoogle: 'Sign in with Google',
+    registerWithGoogle: 'Register with Google',
     username: 'Username',
     password: 'Password',
     noAccount: "Don't have an account?",
@@ -38,10 +40,19 @@ export const en = {
     registerSubtitle: 'Create your profile and start tracking your passion.',
     creatingProfile: 'Creating Profile...',
     registerAction: 'Create Account',
+    email: 'Email',
+    emailPlaceholder: 'e.g. rider@example.com',
     usernamePlaceholder: 'e.g. rider_89',
     passwordPlaceholder: '••••••••',
     chooseUsername: 'Choose a unique username',
-    minPasswordLength: 'At least 6 characters',
+    minPasswordLength: 'At least 8 chars, one uppercase, one number and one symbol',
+    invalidEmail: 'Invalid email address',
+    passwordRequirements: {
+      length: 'At least 8 characters',
+      uppercase: 'At least one uppercase',
+      number: 'At least one number',
+      special: 'At least one symbol',
+    }
   },
 
   // Dashboard Premium
@@ -118,6 +129,12 @@ export const en = {
     done: 'Done',
     close: 'Close',
     chooseBrand: 'Choose your Brand',
+    dangerZone: 'DANGER ZONE',
+    deleteAccount: 'Delete Account',
+    deleteAccountDesc: 'This action is irreversible. It will permanently delete your profile, motorcycles, and all associated data.',
+    deleteAccountConfirm: 'Are you sure you want to leave this community?',
+    deleteAccountSadFace: 'We are sorry to see you go... 😢',
+    deleteAccountCTA: 'Shut down the engine forever',
   },
 
   // Garage
@@ -208,6 +225,7 @@ export const en = {
       rides: 'Rides',
     },
     title: 'COMMUNITY',
+    comments: 'Comments',
     subtitle: 'Share tips, rides, gear reviews and connect with fellow riders',
     newPost: 'New Post',
     postDeleted: 'Post deleted',
@@ -229,6 +247,8 @@ export const en = {
     beFirstComment: 'Be the first to share your thoughts!',
     writeComment: 'Write a comment...',
     sendComment: 'Send comment',
+    viewReplies: 'View replies',
+    hideReplies: 'Hide',
     postTitle: 'Title',
     postContent: 'Content',
     publish: 'Publish',
@@ -302,6 +322,7 @@ export const en = {
     cancel: 'Cancel',
     delete: 'Delete',
     edit: 'Edit',
+    reply: 'Reply',
     confirm: 'Confirm',
     close: 'Close',
     online: 'Online',

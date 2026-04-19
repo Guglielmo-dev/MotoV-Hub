@@ -63,7 +63,8 @@ export function PostDetailDialog({ postId, onClose, onEdit }: PostDetailDialogPr
 
   return (
     <Dialog open onOpenChange={o => !o && onClose()}>
-      <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[680px] max-h-[90vh] overflow-y-auto p-0 border-t-2 border-t-transparent bg-gradient-to-r from-primary/40 via-primary/5 to-transparent bg-[length:100%_2px] bg-no-repeat group/dialog">
+      <DialogContent className="glass-panel border-white/10 text-foreground sm:max-w-[720px] max-h-[90vh] overflow-y-auto p-0 group/dialog">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50" />
         <DialogTitle className="sr-only">{t('community.postDetails')}: {post.title}</DialogTitle>
         <DialogDescription className="sr-only">{t('community.discussionDesc')} {post.title}</DialogDescription>
         

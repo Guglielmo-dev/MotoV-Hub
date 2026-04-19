@@ -4,9 +4,12 @@ import { Link, useLocation } from "wouter";
 import { Bike, ArrowRight } from "lucide-react";
 import { playMotorcycleRevSound } from "@/lib/sound";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
+import { GoogleButton } from "@/components/ui/GoogleButton";
 
 export function Register() {
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { mutate: register, isPending } = useRegister();
   const [, setLocation] = useLocation();
@@ -14,7 +17,7 @@ export function Register() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    register({ username, password }, {
+    register({ username, email, password }, {
       onSuccess: () => {
         playMotorcycleRevSound();
         setTimeout(() => setLocation("/"), 200);
@@ -60,6 +63,18 @@ export function Register() {
                 minLength={3}
               />
             </div>
+ 
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('auth.email')}</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-card border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder={t('auth.emailPlaceholder')}
+                required
+              />
+            </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('auth.password')}</label>
@@ -68,10 +83,30 @@ export function Register() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-card border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                placeholder={t('auth.minPasswordLength')}
+                placeholder={t('auth.passwordPlaceholder')}
                 required
-                minLength={6}
               />
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 px-1 pt-1">
+                {[
+                  { key: 'length', met: password.length >= 8 },
+                  { key: 'uppercase', met: /[A-Z]/.test(password) },
+                  { key: 'number', met: /[0-9]/.test(password) },
+                  { key: 'special', met: /[^a-zA-Z0-9]/.test(password) },
+                ].map((req) => (
+                  <div key={req.key} className="flex items-center gap-1.5 transition-all duration-300">
+                    <div className={cn(
+                      "w-1 h-1 rounded-full",
+                      req.met ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.8)]" : "bg-white/20"
+                    )} />
+                    <span className={cn(
+                      "text-[10px] uppercase font-bold tracking-tight transition-colors",
+                      req.met ? "text-primary/90" : "text-muted-foreground/50"
+                    )}>
+                      {t(`auth.passwordRequirements.${req.key}`)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <button
@@ -83,6 +118,17 @@ export function Register() {
               {!isPending && <ArrowRight className="w-5 h-5" />}
             </button>
           </form>
+
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-4 text-muted-foreground font-mono">Oppure</span>
+            </div>
+          </div>
+
+          <GoogleButton variant="register" />
 
           <p className="mt-8 text-center text-muted-foreground">
             {t('auth.hasAccount')}{' '}

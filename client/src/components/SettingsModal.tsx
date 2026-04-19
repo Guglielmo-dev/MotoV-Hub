@@ -20,7 +20,8 @@ import { useCustomThemes, useCreateCustomTheme, useDeleteCustomTheme } from "@/h
 import { useUpdatePreferences } from "@/hooks/use-preferences";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, useDeleteAccount } from "@/hooks/use-auth";
+import { AlertCircle } from "lucide-react";
 
 interface SettingsModalProps {
   open: boolean;
@@ -48,6 +49,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [newThemeName, setNewThemeName] = useState("");
   const [newThemeColor, setNewThemeColor] = useState("#FFD700");
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  const deleteAccount = useDeleteAccount();
 
   const isCustomActive = brandId === 'custom';
   const currentBrand = BRAND_THEMES.find(b => b.id === brandId);
@@ -130,7 +134,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         </DialogHeader>
 
         {/* Content */}
-        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+        <div className="max-h-[60vh] overflow-y-auto scrollbar-hide">
           <div className="p-6 py-4 space-y-6">
             
             {/* 1. SEZIONE TEMA (DINAMICA) */}
@@ -220,7 +224,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                       </Button>
                    </div>
 
-                   <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                   <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1 scrollbar-hide">
                       {customThemes?.map(theme => {
                         const isActive = isCustomActive && customColor === theme.primaryColor;
                         return (
@@ -348,6 +352,27 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </div>
               )}
             </div>
+
+            {/* 5. DANGER ZONE */}
+            <div className="pt-8 mt-4 border-t border-white/5 space-y-4">
+               <label className="text-[10px] font-mono uppercase tracking-widest text-destructive/70 flex items-center">
+                <AlertCircle className="w-3 h-3 mr-2" />
+                {t('settings.dangerZone')}
+              </label>
+              <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/20 space-y-3">
+                <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                  {t('settings.deleteAccountDesc')}
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="w-full border-destructive/30 text-destructive hover:bg-destructive hover:text-white text-[10px] font-bold uppercase tracking-widest h-10"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                  {t('settings.deleteAccount')}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -392,6 +417,43 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </button>
               );
             })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Account Deletion Confirmation Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="bg-[#0A0A0A] border-destructive/30 text-foreground sm:max-w-[400px] p-0 overflow-hidden rounded-3xl shadow-[0_0_50px_rgba(220,38,38,0.15)]">
+          <div className="p-8 text-center space-y-6">
+            <div className="flex justify-center flex-col items-center gap-4">
+              <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center border-2 border-destructive/20 animate-pulse transition-all">
+                <span className="text-5xl leading-none select-none">😢</span>
+              </div>
+              <h2 className="text-xl font-display uppercase tracking-tight text-destructive">
+                {t('settings.deleteAccountSadFace')}
+              </h2>
+            </div>
+            
+            <p className="text-sm font-medium text-muted-foreground/80 leading-relaxed px-4">
+              {t('settings.deleteAccountConfirm')}
+            </p>
+
+            <div className="flex flex-col gap-3 pt-4">
+              <Button 
+                onClick={() => deleteAccount.mutate()}
+                disabled={deleteAccount.isPending}
+                className="w-full bg-destructive text-white font-bold h-12 rounded-2xl hover:bg-destructive/90 transition-all uppercase tracking-widest text-[11px] shadow-lg shadow-destructive/20"
+              >
+                {deleteAccount.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : t('settings.deleteAccountCTA')}
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="w-full text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase tracking-widest"
+              >
+                {t('common.cancel')}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

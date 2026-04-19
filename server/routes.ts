@@ -12,11 +12,15 @@ import path from "path";
 import bcrypt from "bcrypt";
 import { supabase } from "./supabase";
 import { rateLimit } from "express-rate-limit";
+import passport from "passport";
+import { setupAuth } from "./auth";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
   insertCommunityPostSchema,
   insertCommunityCommentSchema,
   insertTravelLogSchema,
-  insertCustomThemeSchema
+  insertCustomThemeSchema,
+  updateUsernameSchema
 } from "@shared/schema";
 import { subMonths, format, parse, isValid, startOfMonth } from 'date-fns';
 
@@ -69,12 +73,23 @@ export async function registerRoutes(
     }
   }));
 
+  // Initialize Passport
+  setupAuth();
+  app.use(passport.initialize());
+  app.use(passport.session());
+
   // Helper middleware to check auth
   const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     if (!(req.session as any).userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
+  };
+
+  // Funzione di utilità per rimuovere dati sensibili prima di inviare al client
+  const sanitizeUser = (user: any) => {
+    const { password, googleId, ...rest } = user;
+    return rest;
   };
 
 
@@ -160,6 +175,9 @@ export async function registerRoutes(
       }
 
       // Password Hashing (SICUREZZA 1)
+      if (!input.password) {
+        return res.status(400).json({ message: "La password è obbligatoria per la registrazione manuale", field: "password" });
+      }
       const hashedPassword = await bcrypt.hash(input.password, 12);
       const user = await storage.createUser({
         ...input,
@@ -167,10 +185,10 @@ export async function registerRoutes(
       });
 
       (req.session as any).userId = user.id;
-      res.status(201).json(user);
+      res.status(201).json(sanitizeUser(user));
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+        res.status(400).json({ message: err.issues[0].message, field: err.issues[0].path.join('.') });
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
@@ -183,12 +201,12 @@ export async function registerRoutes(
       const user = await storage.getUserByUsername(input.username);
 
       // Secure Password Comparison (SICUREZZA 1)
-      if (!user || !(await bcrypt.compare(input.password, user.password))) {
+      if (!user || !user.password || !(await bcrypt.compare(input.password, user.password))) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
 
       (req.session as any).userId = user.id;
-      res.status(200).json(user);
+      res.status(200).json(sanitizeUser(user));
     } catch (err) {
       res.status(400).json({ message: "Invalid request" });
     }
@@ -209,10 +227,125 @@ export async function registerRoutes(
     if (!user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    res.status(200).json(user);
+    res.status(200).json(sanitizeUser(user));
   });
 
   // Motorcycle Routes
+  // Motorcycle Routes
+  app.post('/api/scan-libretto-and-save', requireAuth, upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nessuna immagine fornita" });
+      }
+
+      const geminiApiKey = process.env.GEMINI_API_KEY;
+      if (!geminiApiKey) {
+        throw new Error("GEMINI_API_KEY non definita nelle variabili d'ambiente");
+      }
+      
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-flash-latest"
+      });
+
+      const base64Image = req.file.buffer.toString('base64');
+
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: req.file.mimetype as string,
+            data: base64Image,
+          }
+        },
+        {
+          text: `Sei un esperto di documenti di registrazione veicoli 
+italiani e internazionali (libretti, carte di circolazione, 
+vehicle registration documents).
+
+Analizza attentamente questo documento ed estrai i dati 
+del veicolo/motociclo.
+
+Rispondi ESCLUSIVAMENTE con un oggetto JSON valido.
+Zero testo aggiuntivo, zero markdown, zero backtick.
+Solo il JSON grezzo.
+
+{
+  "brand": "marca del veicolo (es. Kawasaki, Ducati, BMW, Honda)",
+  "model": "modello esatto (es. Z900, Panigale V4, R1250GS)",
+  "year": anno come numero intero (es. 2021),
+  "engineSize": "cilindrata solo in numeri (es. 948)",
+  "mileage": 0,
+  "registrationDate": "data formato YYYY-MM-DD oppure null",
+  "description": null
+}
+
+Regole importanti:
+- year deve essere numero intero, mai stringa
+- mileage è sempre 0 (non presente sul libretto)
+- engineSize: solo cifre, niente unità (no "cc" no "cm3")
+- registrationDate: formato YYYY-MM-DD oppure null
+- Se un campo non è leggibile o non presente: null
+- Se il documento NON è un documento veicolo:
+  {"error": "non_vehicle_document"}`
+        }
+      ]);
+
+      const responseText = result.response.text().trim();
+
+      let extractedData;
+      try {
+        // Rimuovi eventuali backtick o markdown rimasti
+        const cleanJson = responseText
+          .replace(/```json/gi, '')
+          .replace(/```/g, '')
+          .trim();
+        extractedData = JSON.parse(cleanJson);
+      } catch {
+        console.error("Gemini response non parsabile:", responseText);
+        return res.status(500).json({ 
+          message: "Risposta AI non valida, riprova" 
+        });
+      }
+
+      if (extractedData.error === 'non_vehicle_document') {
+        return res.status(422).json({ 
+          message: "non_vehicle_document" 
+        });
+      }
+
+      // Applica valori default per i campi null
+      const motorcycleData = {
+        brand: extractedData.brand || "Sconosciuto",
+        model: extractedData.model || "Sconosciuto",
+        year: extractedData.year || new Date().getFullYear(),
+        engineSize: extractedData.engineSize || "",
+        mileage: 0,
+        registrationDate: extractedData.registrationDate || null,
+        description: null,
+        photos: null,
+      };
+
+      const userId = (req.session as any).userId;
+      const motorcycle = await storage.createMotorcycle(userId, motorcycleData as any);
+      return res.status(201).json(motorcycle);
+    } catch (err: any) {
+      console.error("[ScanLibretto] Error:", err.stack || err.message || err);
+      
+      if (err.status === 429 || 
+          err.message?.includes('quota') ||
+          err.message?.includes('rate limit') ||
+          err.message?.includes('Too Many Requests')) {
+        return res.status(429).json({
+          message: "Servizio temporaneamente occupato. Attendi 10 secondi e riprova."
+        });
+      }
+      if (err.status === 408 || err.type === 'timeout') {
+        return res.status(504).json({ message: "Servizio lento, riprova" });
+      }
+      res.status(500).json({ message: "Errore durante la scansione" });
+    }
+  });
+
   app.get(api.motorcycles.list.path, requireAuth, async (req, res) => {
     const userId = (req.session as any).userId;
     const motorcycles = await storage.getMotorcycles(userId);
@@ -227,7 +360,7 @@ export async function registerRoutes(
       res.status(201).json(motorcycle);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+        res.status(400).json({ message: err.issues[0].message, field: err.issues[0].path.join('.') });
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
@@ -256,7 +389,7 @@ export async function registerRoutes(
       res.json(updated);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
@@ -306,7 +439,7 @@ export async function registerRoutes(
       res.status(201).json(event);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
@@ -350,7 +483,7 @@ export async function registerRoutes(
       res.status(201).json(mod);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
@@ -373,7 +506,7 @@ export async function registerRoutes(
     // Initialize monthly expenses for last 6 months using date-fns for robustness
     const monthlyExpensesMap = new Map<string, number>();
     const now = new Date();
-    
+
     for (let i = 5; i >= 0; i--) {
       const d = subMonths(startOfMonth(now), i);
       const monthKey = format(d, 'yyyy-MM');
@@ -385,7 +518,7 @@ export async function registerRoutes(
       // Try ISO first
       let d = new Date(dateStr);
       if (isValid(d)) return d;
-      
+
       // Try M/D/YYYY (common in the app's current display)
       d = parse(dateStr, 'M/d/yyyy', new Date());
       if (isValid(d)) return d;
@@ -404,7 +537,7 @@ export async function registerRoutes(
       for (const m of maintenance) {
         const cost = Number(m.cost);
         totalExpenses += cost;
-        
+
         const date = parseFlexibleDate(m.date);
         if (date) {
           const monthKey = format(date, 'yyyy-MM');
@@ -413,12 +546,12 @@ export async function registerRoutes(
           }
         }
 
-        recentActivity.push({ 
-          type: 'maintenance', 
-          date: m.date, 
-          title: m.title, 
-          description: `${m.title} on ${mc.brand} ${mc.model}`, 
-          cost: m.cost 
+        recentActivity.push({
+          type: 'maintenance',
+          date: m.date,
+          title: m.title,
+          description: `${m.title} on ${mc.brand} ${mc.model}`,
+          cost: m.cost
         });
       }
 
@@ -434,12 +567,12 @@ export async function registerRoutes(
           }
         }
 
-        recentActivity.push({ 
-          type: 'modification', 
-          date: m.installDate, 
+        recentActivity.push({
+          type: 'modification',
+          date: m.installDate,
           title: `Mod: ${m.title}`,
-          description: `Installed ${m.title} on ${mc.brand} ${mc.model}`, 
-          cost: m.price 
+          description: `Installed ${m.title} on ${mc.brand} ${mc.model}`,
+          cost: m.price
         });
       }
     }
@@ -499,7 +632,7 @@ export async function registerRoutes(
       res.json({ motorcycle: updated, maintenanceCreated });
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
@@ -527,7 +660,7 @@ export async function registerRoutes(
       res.status(201).json(record);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
@@ -551,7 +684,7 @@ export async function registerRoutes(
       res.status(201).json(withMeta);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: 'Internal server error' });
       }
@@ -568,7 +701,7 @@ export async function registerRoutes(
       res.json(withMeta);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         const msg = err instanceof Error ? err.message : "Internal server error";
         res.status(msg === "Post not found or unauthorized" ? 403 : 500).json({ message: msg });
@@ -580,13 +713,13 @@ export async function registerRoutes(
     try {
       const postId = parseInt(req.params.id as string);
       const userId = (req.session as any).userId;
-      
+
       if (isNaN(postId)) {
         return res.status(400).json({ message: "Invalid post ID" });
       }
 
       const post = await storage.getCommunityPost(postId, userId);
-      
+
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
@@ -612,12 +745,15 @@ export async function registerRoutes(
     try {
       const userId = (req.session as any).userId;
       const postId = Number(req.params.id as string);
-      const input = insertCommunityCommentSchema.pick({ content: true }).parse(req.body);
-      const comment = await storage.createCommunityComment(postId, userId, input.content);
+      const { content, parentId } = z.object({ 
+        content: z.string().min(1),
+        parentId: z.number().optional()
+      }).parse(req.body);
+      const comment = await storage.createCommunityComment(postId, userId, content, parentId);
       res.status(201).json(comment);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: 'Internal server error' });
       }
@@ -652,7 +788,7 @@ export async function registerRoutes(
       res.status(201).json(log);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: 'Internal server error' });
       }
@@ -668,7 +804,7 @@ export async function registerRoutes(
       res.json(log);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: 'Internal server error' });
       }
@@ -697,7 +833,7 @@ export async function registerRoutes(
       res.status(201).json(theme);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(400).json({ message: err instanceof Error ? err.message : 'Internal server error' });
       }
@@ -708,6 +844,28 @@ export async function registerRoutes(
     const userId = (req.session as any).userId;
     await storage.deleteCustomTheme(Number(req.params.id), userId);
     res.status(204).send();
+  });
+
+  app.patch('/api/user/username', requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const { username } = updateUsernameSchema.parse(req.body);
+
+      // Verifica unicità username
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({ message: "Username già occupato" });
+      }
+
+      const updated = await storage.updateUserPreferences(userId, { username });
+      res.json(sanitizeUser(updated));
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.issues[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    }
   });
 
   // ── User Preferences Routes ───────────────────────────────────────────────
@@ -727,12 +885,79 @@ export async function registerRoutes(
       res.json(updated);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        res.status(400).json({ message: err.errors[0].message });
+        res.status(400).json({ message: err.issues[0].message });
       } else {
         res.status(500).json({ message: 'Internal server error' });
       }
     }
   });
+
+  app.delete('/api/user', requireAuth, async (req, res, next) => {
+    try {
+      const userId = (req.session as any).userId;
+      await storage.deleteUser(userId);
+      
+      // Cleanup session and passport auth
+      req.logout((err) => {
+        if (err) return next(err);
+        req.session.destroy((err) => {
+          if (err) return next(err);
+          res.clearCookie('connect.sid');
+          res.status(204).send();
+        });
+      });
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // ── Ratings Routes ───────────────────────────────────────────────────────
+
+  app.post(api.ratings.submit.path, requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const input = api.ratings.submit.input.parse(req.body);
+      const rating = await storage.upsertRating(userId, input);
+      res.json(rating);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.issues[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    }
+  });
+
+  app.get(api.ratings.get.path, async (req, res) => {
+    const { targetType, targetId } = req.params;
+    const userId = (req.session as any).userId;
+    
+    const stats = await storage.getAverageRating(targetType, targetId);
+    let userRating = null;
+    if (userId) {
+      userRating = await storage.getUserRating(userId, targetType, targetId);
+    }
+    
+    res.json({
+      ...stats,
+      userRating
+    });
+  });
+
+  // ── Google Auth Routes ──────────────────────────────────────────────────
+
+  app.get("/api/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+  app.get("/api/auth/google/callback", 
+    passport.authenticate("google", { failureRedirect: "/login?error=oauth" }),
+    (req, res) => {
+      // Sync Passport user with existing manual session logic
+      if (req.user) {
+        (req.session as any).userId = (req.user as any).id;
+      }
+      res.redirect("/");
+    }
+  );
 
   return httpServer;
 }

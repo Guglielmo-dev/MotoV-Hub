@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Gamepad2, Trophy, Play, Star, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NeonRider } from "./games/NeonRider";
+import { RatingSystem } from "@/components/ui/RatingSystem";
 
 export function Games() {
   const { t } = useTranslation();
@@ -43,9 +44,7 @@ export function Games() {
                 <Sparkles className="w-3 h-3" />
                 Featured
               </span>
-              <div className="flex gap-0.5">
-                {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-3 h-3 text-yellow-500 fill-yellow-500" />)}
-              </div>
+              <RatingSystem targetType="game" targetId="neon-rider" showCount />
             </div>
             
             <h2 className="text-4xl sm:text-6xl font-black font-display uppercase tracking-tighter mb-4">

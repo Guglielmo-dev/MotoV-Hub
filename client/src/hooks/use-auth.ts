@@ -95,3 +95,64 @@ export function useLogout() {
     },
   });
 }
+
+export function useUpdateUsername() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (username: string) => {
+      const res = await fetch(api.auth.updateUsername.path, {
+        method: api.auth.updateUsername.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username }),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to update username");
+      }
+      return res.json();
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData([api.auth.me.path], updatedUser);
+      toast({ title: "Profile Updated", description: "Username changed successfully." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch(api.auth.deleteAccount.path, {
+        method: api.auth.deleteAccount.method,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to delete account");
+      }
+    },
+    onSuccess: () => {
+      queryClient.setQueryData([api.auth.me.path], null);
+      queryClient.clear();
+      toast({ 
+        title: "Account eliminato", 
+        description: "Speriamo di rivederti presto in sella!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Errore eliminazione", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    },
+  });
+}

@@ -32,7 +32,7 @@ function playDefaultSynth() {
     gainMaster.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.8);
 
     const distortion = ctx.createWaveShaper();
-    distortion.curve = makeDistortionCurve(280);
+    distortion.curve = makeDistortionCurve(280) as any;
     distortion.oversample = '4x';
 
     const osc1 = ctx.createOscillator();

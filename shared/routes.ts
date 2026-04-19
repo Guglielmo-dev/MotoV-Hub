@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertMotorcycleSchema, motorcycles, insertMaintenanceSchema, maintenance, insertModificationSchema, modifications, users } from './schema';
+import { insertMotorcycleSchema, motorcycles, insertMaintenanceSchema, maintenance, insertModificationSchema, modifications, users, insertUserSchema, insertRatingSchema, ratings } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -19,10 +19,7 @@ export const api = {
     register: {
       method: 'POST' as const,
       path: '/api/register' as const,
-      input: z.object({
-        username: z.string().min(1, "Username is required"),
-        password: z.string().min(6, "Password must be at least 6 characters"),
-      }),
+      input: insertUserSchema,
       responses: {
         201: z.custom<typeof users.$inferSelect>(),
         400: errorSchemas.validation,
@@ -52,6 +49,23 @@ export const api = {
       path: '/api/me' as const,
       responses: {
         200: z.custom<typeof users.$inferSelect>(),
+        401: errorSchemas.unauthorized,
+      },
+    },
+    updateUsername: {
+      method: 'PATCH' as const,
+      path: '/api/user/username' as const,
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+      },
+    },
+    deleteAccount: {
+      method: 'DELETE' as const,
+      path: '/api/user' as const,
+      responses: {
+        204: z.void(),
         401: errorSchemas.unauthorized,
       },
     }
@@ -219,8 +233,37 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+  },
+  travel_logs: {
+    list: { method: 'GET' as const, path: '/api/travel' as const },
+    delete: { method: 'DELETE' as const, path: '/api/travel/:id' as const },
+  },
+  ratings: {
+    submit: {
+      method: 'POST' as const,
+      path: '/api/ratings' as const,
+      input: insertRatingSchema,
+      responses: {
+        200: z.custom<Rating>(),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+      }
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/ratings/:targetType/:targetId' as const,
+      responses: {
+        200: z.object({
+          average: z.number(),
+          count: z.number(),
+          userRating: z.number().nullable(),
+        }),
+      }
+    }
   }
 };
+
+export type Rating = typeof ratings.$inferSelect;
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
   let url = path;

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ImageUploadField } from "@/components/ui/ImageUploadField";
 import { useTranslation } from "react-i18next";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { LibrettoScanner } from "@/components/LibrettoScanner";
 
 export function Garage() {
   const { data: motorcycles, isLoading } = useMotorcycles();
@@ -14,19 +15,13 @@ export function Garage() {
   const { t } = useTranslation();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingPhotoId, setEditingPhotoId] = useState<number | null>(null);
   const [newPhotoUrl, setNewPhotoUrl] = useState('');
 
   const [formData, setFormData] = useState({
     brand: '', model: '', year: new Date().getFullYear(),
     engineSize: '', mileage: 0, description: '', photos: ''
-  });
-
-  const [regData, setRegData] = useState({
-    brand: '', model: '', year: new Date().getFullYear(),
-    engineSize: '', initialMileage: 0, registrationDate: '',
-    documentUrl: '', description: '', photos: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -39,22 +34,7 @@ export function Garage() {
     });
   };
 
-  const handleRegistrationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createBike({
-      brand: regData.brand, model: regData.model, year: Number(regData.year),
-      engineSize: regData.engineSize, mileage: Number(regData.initialMileage),
-      description: regData.description, photos: regData.photos,
-      registrationDocumentUrl: regData.documentUrl,
-      registrationDate: regData.registrationDate,
-      initialMileage: Number(regData.initialMileage),
-    }, {
-      onSuccess: () => {
-        setIsRegistrationOpen(false);
-        setRegData({ brand: '', model: '', year: new Date().getFullYear(), engineSize: '', initialMileage: 0, registrationDate: '', documentUrl: '', description: '', photos: '' });
-      }
-    });
-  };
+
 
   const handleSavePhoto = () => {
     if (editingPhotoId === null) return;
@@ -126,62 +106,17 @@ export function Garage() {
             </DialogContent>
           </Dialog>
 
-          {/* From Registration Dialog */}
-          <Dialog open={isRegistrationOpen} onOpenChange={setIsRegistrationOpen}>
-            <DialogTrigger asChild>
-              <button data-testid="button-from-registration" className="flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground font-semibold rounded-xl hover:bg-white/10 transition-all border border-white/5">
-                <FileText className="w-5 h-5" />
-                {t('garage.fromRegistration')}
-              </button>
-            </DialogTrigger>
-            <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader className="pr-8">
-                <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">{t('garage.addRegistration') || 'Add from Registration Document'}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleRegistrationSubmit} className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">{t('garage.brand')}</label>
-                    <input required value={regData.brand} onChange={e => setRegData({...regData, brand: e.target.value})} className={inputCls} placeholder={t('garage.brandPlaceholder')} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">{t('garage.model')}</label>
-                    <input required value={regData.model} onChange={e => setRegData({...regData, model: e.target.value})} className={inputCls} placeholder={t('garage.modelPlaceholder')} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">{t('garage.year')}</label>
-                    <input type="number" required value={regData.year} onChange={e => setRegData({...regData, year: parseInt(e.target.value)})} className={inputCls} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">{t('garage.engineSize')} (cc)</label>
-                    <input value={regData.engineSize} onChange={e => setRegData({...regData, engineSize: e.target.value})} className={inputCls} placeholder="948" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium uppercase font-mono text-[10px]">{t('motorcycleDetails.initialMileage')}</label>
-                    <input type="number" required value={regData.initialMileage} onChange={e => setRegData({...regData, initialMileage: parseInt(e.target.value)})} className={inputCls} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('motorcycleDetails.registrationDate')}</label>
-                  <DatePicker value={regData.registrationDate} onChange={val => setRegData({...regData, registrationDate: val})} placeholder={t('common.selectDate')} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('garage.docUrlLabel')}</label>
-                  <input value={regData.documentUrl} onChange={e => setRegData({...regData, documentUrl: e.target.value})} className={inputCls} placeholder={t('garage.docUrlPlaceholder')} />
-                </div>
-                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('garage.description')}</label>
-                  <textarea value={regData.description} onChange={e => setRegData({...regData, description: e.target.value})} className={`${inputCls} h-16 resize-none`} placeholder={t('garage.descriptionPlaceholder')} />
-                </div>
-                <ImageUploadField label={t('garage.photos')} value={regData.photos} onChange={url => setRegData({...regData, photos: url})} />
-                <button type="submit" disabled={isPending} className="w-full py-3 bg-primary text-black rounded-xl font-bold mt-4 hover:bg-primary/90 transition-colors disabled:opacity-50">
-                  {isPending ? t('garage.adding') : t('garage.createMotorcycle')}
-                </button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          {/* From Registration Scanner */}
+          <button 
+            data-testid="button-from-registration" 
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground font-semibold rounded-xl hover:bg-white/10 transition-all border border-white/5"
+          >
+            <FileText className="w-5 h-5" />
+            {t('garage.fromRegistration')}
+          </button>
+          
+          <LibrettoScanner open={isScannerOpen} onOpenChange={setIsScannerOpen} />
         </div>
       </div>
 

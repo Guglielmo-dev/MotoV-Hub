@@ -1,13 +1,14 @@
 import { ShieldAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
+import { it, enUS } from "date-fns/locale";
 
 interface SpecsTabProps {
   bike: any;
 }
 
 export function SpecsTab({ bike }: SpecsTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <div className="bg-card/80 backdrop-blur-md rounded-2xl p-6 sm:p-10 space-y-8">
       <h3 className="text-2xl font-bold font-display border-b border-white/5 pb-4">{t('motorcycleDetails.details')}</h3>
@@ -18,7 +19,7 @@ export function SpecsTab({ bike }: SpecsTabProps) {
         <div><dt className="text-sm text-muted-foreground mb-1">{t('garage.engineSize')}</dt><dd className="font-medium text-lg">{bike.engineSize}cc</dd></div>
         <div><dt className="text-sm text-muted-foreground mb-1">{t('garage.mileage')}</dt><dd className="font-medium text-lg">{bike.mileage?.toLocaleString()} {t('units.km')}</dd></div>
         {bike.initialMileage !== null && <div><dt className="text-sm text-muted-foreground mb-1">{t('motorcycleDetails.initialMileage')}</dt><dd className="font-medium text-lg">{bike.initialMileage?.toLocaleString()} {t('units.km')}</dd></div>}
-        <div><dt className="text-sm text-muted-foreground mb-1">{t('motorcycleDetails.addedToGarage')}</dt><dd className="font-medium text-lg">{bike.createdAt ? format(new Date(bike.createdAt), 'MMMM yyyy') : t('motorcycleDetails.unknown')}</dd></div>
+        <div><dt className="text-sm text-muted-foreground mb-1">{t('motorcycleDetails.addedToGarage')}</dt><dd className="font-medium text-lg">{bike.createdAt ? format(new Date(bike.createdAt), 'MMMM yyyy', { locale: i18n.language === 'it' ? it : enUS }) : t('motorcycleDetails.unknown')}</dd></div>
       </dl>
 
       {bike.nftContractAddress && (

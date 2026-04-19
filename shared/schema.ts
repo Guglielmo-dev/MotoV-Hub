@@ -12,7 +12,12 @@ export const session = pgTable("session", {
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  email: text("email").unique(),
+  password: text("password"), // Nullable for OAuth users
+  googleId: text("google_id").unique(),
+  avatarUrl: text("avatar_url"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   // User Preferences
   audioEnabled: boolean("audio_enabled").default(true),
   customAudioData: text("custom_audio_data"),
@@ -23,7 +28,7 @@ export const users = pgTable("users", {
 
 export const motorcycles = pgTable("motorcycles", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   brand: text("brand").notNull(),
   model: text("model").notNull(),
   year: integer("year").notNull(),
@@ -41,7 +46,7 @@ export const motorcycles = pgTable("motorcycles", {
 
 export const maintenance = pgTable("maintenance", {
   id: serial("id").primaryKey(),
-  motorcycleId: integer("motorcycle_id").notNull(),
+  motorcycleId: integer("motorcycle_id").notNull().references(() => motorcycles.id, { onDelete: 'cascade' }),
   title: text("title").notNull(),
   date: text("date").notNull(),
   mileage: integer("mileage").notNull(),
@@ -52,7 +57,7 @@ export const maintenance = pgTable("maintenance", {
 
 export const modifications = pgTable("modifications", {
   id: serial("id").primaryKey(),
-  motorcycleId: integer("motorcycle_id").notNull(),
+  motorcycleId: integer("motorcycle_id").notNull().references(() => motorcycles.id, { onDelete: 'cascade' }),
   title: text("title").notNull(),
   price: numeric("price").notNull(),
   installDate: text("install_date").notNull(),
@@ -63,7 +68,7 @@ export const modifications = pgTable("modifications", {
 
 export const communityPosts = pgTable("community_posts", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   title: text("title").notNull(),
   content: text("content").notNull(),
   imageUrl: text("image_url"),
@@ -73,21 +78,22 @@ export const communityPosts = pgTable("community_posts", {
 
 export const communityComments = pgTable("community_comments", {
   id: serial("id").primaryKey(),
-  postId: integer("post_id").notNull(),
-  userId: integer("user_id").notNull(),
+  postId: integer("post_id").notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  parentId: integer("parent_id"),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const communityLikes = pgTable("community_likes", {
   id: serial("id").primaryKey(),
-  postId: integer("post_id").notNull(),
-  userId: integer("user_id").notNull(),
+  postId: integer("post_id").notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
 });
 
 export const travelLogs = pgTable("travel_logs", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   title: text("title").notNull(),
   location: text("location").notNull(),
   visitDate: text("visit_date").notNull(),
@@ -98,16 +104,22 @@ export const travelLogs = pgTable("travel_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const ratings = pgTable("ratings", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  targetType: text("target_type").notNull(), // 'game', 'motorcycle', 'post'
+  targetId: text("target_id").notNull(), // IDs like 'neon-rider' or numeric string IDs
+  score: integer("score").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const customThemes = pgTable("custom_themes", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   brandName: text("brand_name").notNull(),
   primaryColor: text("primary_color").notNull(), // hex es. #FFD700
   createdAt: timestamp("created_at").defaultNow(),
 });
-
-export type CustomTheme = typeof customThemes.$inferSelect;
-export type InsertCustomTheme = z.infer<typeof insertCustomThemeSchema>;
 
 export const usersRelations = relations(users, ({ many }) => ({
   motorcycles: many(motorcycles),
@@ -115,6 +127,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   communityComments: many(communityComments),
   travelLogs: many(travelLogs),
   customThemes: many(customThemes),
+  ratings: many(ratings),
 }));
 
 export const motorcyclesRelations = relations(motorcycles, ({ one, many }) => ({
@@ -142,6 +155,11 @@ export const communityCommentsRelations = relations(communityComments, ({ one })
   user: one(users, { fields: [communityComments.userId], references: [users.id] }),
 }));
 
+export const communityLikesRelations = relations(communityLikes, ({ one }) => ({
+  post: one(communityPosts, { fields: [communityLikes.postId], references: [communityPosts.id] }),
+  user: one(users, { fields: [communityLikes.userId], references: [users.id] }),
+}));
+
 export const travelLogsRelations = relations(travelLogs, ({ one }) => ({
   user: one(users, { fields: [travelLogs.userId], references: [users.id] }),
 }));
@@ -150,7 +168,33 @@ export const customThemesRelations = relations(customThemes, ({ one }) => ({
   user: one(users, { fields: [customThemes.userId], references: [users.id] }),
 }));
 
-export const insertUserSchema = createInsertSchema(users).pick({ username: true, password: true });
+export const ratingsRelations = relations(ratings, ({ one }) => ({
+  user: one(users, { fields: [ratings.userId], references: [users.id] }),
+}));
+
+ export const insertUserSchema = createInsertSchema(users).pick({ 
+  username: true, 
+  password: true,
+  email: true,
+  googleId: true,
+  avatarUrl: true,
+  firstName: true,
+  lastName: true
+}).extend({
+  email: z.string().email("Inserisci un'email valida"),
+  username: z.string().min(3, "Lo username deve essere di almeno 3 caratteri"),
+  password: z.string()
+    .min(8, "La password deve essere di almeno 8 caratteri")
+    .regex(/[A-Z]/, "Aggiungi almeno una lettera maiuscola")
+    .regex(/[0-9]/, "Aggiungi almeno un numero")
+    .regex(/[^a-zA-Z0-9]/, "Aggiungi almeno un carattere speciale")
+    .optional(), // Optional for Google OAuth
+});
+
+export const updateUsernameSchema = z.object({
+  username: z.string().min(3, "Lo username deve essere di almeno 3 caratteri"),
+});
+
 export const insertMotorcycleSchema = createInsertSchema(motorcycles).omit({ id: true, userId: true, createdAt: true });
 export const insertMaintenanceSchema = createInsertSchema(maintenance).omit({ id: true, createdAt: true });
 export const insertModificationSchema = createInsertSchema(modifications).omit({ id: true, createdAt: true });
@@ -160,6 +204,12 @@ export const insertCommunityCommentSchema = createInsertSchema(communityComments
 export const insertTravelLogSchema = createInsertSchema(travelLogs).omit({ id: true, userId: true, createdAt: true });
 export const insertCustomThemeSchema = createInsertSchema(customThemes)
   .omit({ id: true, userId: true, createdAt: true });
+
+export const insertRatingSchema = createInsertSchema(ratings)
+  .omit({ id: true, userId: true, createdAt: true })
+  .extend({
+    score: z.number().min(1).max(5),
+  });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -183,3 +233,9 @@ export type CommunityLike = typeof communityLikes.$inferSelect;
 
 export type TravelLog = typeof travelLogs.$inferSelect;
 export type InsertTravelLog = z.infer<typeof insertTravelLogSchema>;
+
+export type CustomTheme = typeof customThemes.$inferSelect;
+export type InsertCustomTheme = z.infer<typeof insertCustomThemeSchema>;
+
+export type Rating = typeof ratings.$inferSelect;
+export type InsertRating = z.infer<typeof insertRatingSchema>;

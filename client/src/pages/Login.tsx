@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Bike, ArrowRight } from "lucide-react";
 import { playMotorcycleRevSound } from "@/lib/sound";
 import { useTranslation } from "react-i18next";
+import { GoogleButton } from "@/components/ui/GoogleButton";
 
 export function Login() {
   const [username, setUsername] = useState("");
@@ -71,6 +72,17 @@ export function Login() {
               {!isPending && <ArrowRight className="w-5 h-5" />}
             </button>
           </form>
+
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-4 text-muted-foreground font-mono">Oppure</span>
+            </div>
+          </div>
+
+          <GoogleButton variant="login" />
 
           <p className="mt-8 text-center text-muted-foreground">
             {t('auth.noAccount')}{' '}

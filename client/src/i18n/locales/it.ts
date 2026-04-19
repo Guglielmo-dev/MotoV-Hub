@@ -23,6 +23,8 @@ export const it = {
   auth: {
     login: 'Accedi',
     register: 'Registrati',
+    loginWithGoogle: 'Accedi con Google',
+    registerWithGoogle: 'Registrati con Google',
     username: 'Nome utente',
     password: 'Password',
     noAccount: 'Non hai un account?',
@@ -38,10 +40,19 @@ export const it = {
     registerSubtitle: 'Crea il tuo profilo e inizia a tracciare la tua passione.',
     creatingProfile: 'Creazione Profilo...',
     registerAction: 'Crea Account',
+    email: 'Email',
+    emailPlaceholder: 'es. rider@esempio.it',
     usernamePlaceholder: 'es. rider_89',
     passwordPlaceholder: '••••••••',
     chooseUsername: 'Scegli un nome utente univoco',
-    minPasswordLength: 'Almeno 6 caratteri',
+    minPasswordLength: 'Almeno 8 caratteri, una maiuscola, un numero e un simbolo',
+    invalidEmail: 'Inserisci un\'email valida',
+    passwordRequirements: {
+      length: 'Almeno 8 caratteri',
+      uppercase: 'Almeno una maiuscola',
+      number: 'Almeno un numero',
+      special: 'Almeno un simbolo',
+    }
   },
 
   // Dashboard Premium
@@ -118,6 +129,12 @@ export const it = {
     done: 'Fatto',
     close: 'Chiudi',
     chooseBrand: 'Scegli il tuo Brand',
+    dangerZone: 'ZONA PERICOLOSA',
+    deleteAccount: 'Elimina Account',
+    deleteAccountDesc: 'Questa azione è irreversibile. Eliminerà permanentemente il tuo profilo, le tue moto e tutti i dati associati.',
+    deleteAccountConfirm: 'Sei proprio sicuro di voler abbandonare questa community?',
+    deleteAccountSadFace: 'Ci dispiace vederti andare via... 😢',
+    deleteAccountCTA: 'Spegni definitivamente il motore',
   },
 
   // Garage
@@ -208,6 +225,7 @@ export const it = {
       rides: 'Giri',
     },
     title: 'COMMUNITY',
+    comments: 'Commenti',
     subtitle: 'Condividi consigli, giri, recensioni e connettiti con altri rider',
     newPost: 'Nuovo Post',
     postDeleted: 'Post eliminato',
@@ -229,6 +247,8 @@ export const it = {
     beFirstComment: 'Sii il primo a condividere i tuoi pensieri!',
     writeComment: 'Scrivi un commento...',
     sendComment: 'Invia commento',
+    viewReplies: 'Vedi risposte',
+    hideReplies: 'Nascondi',
     postTitle: 'Titolo',
     postContent: 'Contenuto',
     publish: 'Pubblica',
@@ -302,6 +322,7 @@ export const it = {
     cancel: 'Annulla',
     delete: 'Elimina',
     edit: 'Modifica',
+    reply: 'Rispondi',
     confirm: 'Conferma',
     close: 'Chiudi',
     online: 'Online',

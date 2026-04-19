@@ -1,9 +1,10 @@
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Bike, LogOut, ChevronLeft,
-  ChevronRight, Users, BookOpen, Gamepad2
+  ChevronRight, Users, BookOpen, Gamepad2, Pencil, Check, X
 } from "lucide-react";
-import { useAuth, useLogout } from "@/hooks/use-auth";
+import { useAuth, useLogout, useUpdateUsername } from "@/hooks/use-auth";
+import { useState, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { SettingsTrigger } from "@/components/SettingsModal";
 import { useTranslation } from "react-i18next";
@@ -29,6 +30,27 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { mutate: logout, isPending } = useLogout();
   const { theme } = useTheme();
   const { t } = useTranslation();
+  
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [editUsername, setEditUsername] = useState("");
+  const { mutate: updateUsername, isPending: isUpdating } = useUpdateUsername();
+
+  // Update editUsername field when user data changes
+  useEffect(() => {
+    if (user?.username) {
+      setEditUsername(user.username);
+    }
+  }, [user?.username]);
+
+  const handleUpdateUsername = () => {
+    if (!editUsername || editUsername === user?.username) {
+      setIsEditingUsername(false);
+      return;
+    }
+    updateUsername(editUsername, {
+      onSuccess: () => setIsEditingUsername(false),
+    });
+  };
 
   const links: { href: string; label: string; icon: any; exact: boolean; page: PageName }[] = [
     { href: "/", label: t('nav.dashboard'), icon: LayoutDashboard, exact: true, page: 'Dashboard' },
@@ -123,10 +145,44 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               {getInitials(user.username)}
             </div>
             {!collapsed && (
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-display font-bold uppercase tracking-wider text-foreground truncate">
-                  {user.username}
-                </span>
+              <div className="flex flex-col min-w-0 flex-1">
+                {isEditingUsername ? (
+                  <div className="flex items-center gap-1 w-full">
+                    <input
+                      autoFocus
+                      type="text"
+                      className="bg-white/5 border border-white/10 rounded px-2 py-0.5 text-xs text-foreground outline-none focus:border-primary/50 w-full"
+                      value={editUsername}
+                      onChange={(e) => setEditUsername(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleUpdateUsername();
+                        if (e.key === 'Escape') setIsEditingUsername(false);
+                      }}
+                      disabled={isUpdating}
+                    />
+                    <button onClick={handleUpdateUsername} disabled={isUpdating} className="text-primary hover:scale-110 transition-transform">
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => setIsEditingUsername(false)} disabled={isUpdating} className="text-muted-foreground hover:text-foreground">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group/user-title">
+                    <span className="text-sm font-display font-bold uppercase tracking-wider text-foreground truncate">
+                      {user.username}
+                    </span>
+                    <button 
+                      onClick={() => {
+                        setEditUsername(user.username);
+                        setIsEditingUsername(true);
+                      }}
+                      className="opacity-0 group-hover/user-title:opacity-100 p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-primary transition-all"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
