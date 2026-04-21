@@ -20,9 +20,11 @@ import {
   insertCommunityCommentSchema,
   insertTravelLogSchema,
   insertCustomThemeSchema,
+  insertNotificationSchema,
   updateUsernameSchema
 } from "@shared/schema";
 import { subMonths, format, parse, isValid, startOfMonth } from 'date-fns';
+import { generateChatResponse } from "./ai";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -83,6 +85,14 @@ export async function registerRoutes(
     if (!(req.session as any).userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    next();
+  };
+
+  const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
+    const userId = (req.session as any).userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const user = await storage.getUser(userId);
+    if (!user || !user.isAdmin) return res.status(403).json({ message: "Forbidden: Admin access required" });
     next();
   };
 
@@ -944,6 +954,73 @@ Regole importanti:
     });
   });
 
+  // ── Notification Routes ──────────────────────────────────────────────────
+  app.get('/api/notifications', requireAuth, async (req, res) => {
+    const notifications = await storage.getNotifications();
+    res.json(notifications);
+  });
+
+  app.post('/api/notifications', requireAdmin, async (req, res) => {
+    try {
+      const input = insertNotificationSchema.parse(req.body);
+      const notification = await storage.createNotification(input);
+      res.status(201).json(notification);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.issues[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    }
+  });
+
+  app.delete('/api/notifications/:id', requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      await storage.deleteNotification(id);
+      res.status(204).send();
+    } catch (err) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/notifications/read', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    await storage.updateUserLastRead(userId);
+    res.status(200).json({ success: true });
+  });
+
+  // ── Game Scores Routes ──────────────────────────────────────────────────
+  app.get('/api/games/:gameId/scores', requireAuth, async (req, res) => {
+    try {
+      const gameId = req.params.gameId as string;
+      const userId = (req.session as any).userId;
+      const scores = await storage.getGameScores(gameId, userId);
+      res.json(scores);
+    } catch (err) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/games/:gameId/scores', requireAuth, async (req, res) => {
+    try {
+      const gameId = req.params.gameId as string;
+      const userId = (req.session as any).userId;
+      const { score } = z.object({ score: z.number() }).parse(req.body);
+      const gameScore = await storage.submitGameScore(userId, gameId, score);
+      
+      // Return updated bests
+      const bests = await storage.getGameScores(req.params.gameId as string, userId);
+      res.status(201).json(bests);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.issues[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    }
+  });
+
   // ── Google Auth Routes ──────────────────────────────────────────────────
 
   app.get("/api/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
@@ -958,6 +1035,19 @@ Regole importanti:
       res.redirect("/");
     }
   );
+
+  // ── AI Chat Route ───────────────────────────────────────────────────────
+  app.post("/api/ai/chat", requireAuth, async (req, res) => {
+    try {
+      const { message, history } = req.body;
+      if (!message) return res.status(400).json({ message: "Messaggio mancante" });
+      
+      const response = await generateChatResponse(message, history);
+      res.json({ response });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   return httpServer;
 }

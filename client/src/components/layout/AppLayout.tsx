@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "react-i18next";
+import { NotificationInbox } from "./NotificationInbox";
+import { ChatBot } from "./ChatBot";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -33,8 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   };
 
   const closeMenu = () => setMobileOpen(false);
-  const sidebarWidth = collapsed ? 64 : 256;
-
+  
   const mobileLinks = [
     { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
     { href: '/garage', label: t('nav.garage'), icon: Bike },
@@ -54,9 +55,12 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
           <h1 className="text-xl font-bold font-display">MOTO<span className="text-primary">VAULT</span></h1>
         </div>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 text-muted-foreground hover:text-white">
-          {mobileOpen ? <X /> : <Menu />}
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationInbox />
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 text-muted-foreground hover:text-white transition-colors">
+            {mobileOpen ? <X /> : <Menu />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -96,10 +100,21 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main Content + Footer */}
       <main
-        className={`flex-1 pt-16 md:pt-0 min-h-screen flex flex-col transition-all duration-300
+        className={`flex-1 min-h-screen flex flex-col transition-all duration-300
           ${collapsed ? 'md:ml-16' : 'md:ml-64'}
         `}
       >
+        {/* Desktop Header / Top Bar */}
+        <div className="hidden md:flex items-center justify-end px-8 py-4 border-b border-white/5 sticky top-0 bg-background/80 backdrop-blur-md z-30">
+          <div className="flex items-center gap-4">
+             <div className="hidden lg:flex flex-col items-end mr-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white leading-none mb-1">{user?.username}</span>
+                <span className="text-[8px] font-mono text-primary uppercase tracking-tighter">System Active</span>
+             </div>
+             <NotificationInbox />
+          </div>
+        </div>
+
         <div className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
           {children}
         </div>
@@ -114,6 +129,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
         </footer>
       </main>
+      <ChatBot />
     </div>
   );
 }

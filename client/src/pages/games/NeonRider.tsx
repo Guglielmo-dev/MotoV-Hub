@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RefreshCw, Gamepad2, Play } from "lucide-react";
+import { ArrowLeft, Trophy, RefreshCw, Gamepad2, Play, Trophy as TrophyIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 interface NeonRiderProps {
@@ -164,12 +165,15 @@ class AudioEngine {
 
 export function NeonRider({ onBack }: NeonRiderProps) {
   const { t } = useTranslation();
+  const { data: user } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<'start' | 'playing' | 'gameover'>('start');
   const [score, setScore] = useState(0);
   const [displayScore, setDisplayScore] = useState(0);
   const [comboMultiplier, setComboMultiplier] = useState(1);
-  const [highScore, setHighScore] = useState(() => Number(localStorage.getItem('neon-rider-highscore') || 0));
+  const [highScore, setHighScore] = useState(0);
+  const [globalRecord, setGlobalRecord] = useState(0);
+  const [isNewGlobalRecord, setIsNewGlobalRecord] = useState(false);
   const [primaryColor, setPrimaryColor] = useState('#00FF41');
   const audioRef = useRef(new AudioEngine());
 
@@ -918,17 +922,69 @@ export function NeonRider({ onBack }: NeonRiderProps) {
   useEffect(() => {
     if (gameState === 'gameover' && displayScore < score) {
       const step = Math.ceil((score - displayScore) / 10);
-      const timer = setTimeout(() => setDisplayScore(s => Math.min(score, s + step)), 30);
+      const timer = setTimeout(() => setDisplayScore((s: number) => Math.min(score, s + step)), 30);
       return () => clearTimeout(timer);
     }
   }, [gameState, score, displayScore]);
 
   useEffect(() => {
-    if (gameState === 'gameover' && score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('neon-rider-highscore', score.toString());
+    if (gameState === 'gameover') {
+      const submitScore = async () => {
+        try {
+          const res = await fetch(`/api/games/neon-rider/scores`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ score })
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            if (score > highScore) {
+              setHighScore(score);
+              const localKey = `neon-rider-highscore-${user?.id}`;
+              localStorage.setItem(localKey, score.toString());
+            }
+            if (score > data.globalBest) {
+              setIsNewGlobalRecord(true);
+            }
+            setGlobalRecord(data.globalBest);
+          }
+        } catch (err) {
+          console.error("Failed to submit score", err);
+        }
+      };
+      submitScore();
     }
-  }, [gameState, score, highScore]);
+  }, [gameState, score]);
+
+  useEffect(() => {
+    const fetchScores = async () => {
+      if (!user) return;
+      try {
+        const res = await fetch(`/api/games/neon-rider/scores`);
+        if (res.ok) {
+          const data = await res.json();
+          setHighScore(data.personalBest);
+          setGlobalRecord(data.globalBest);
+          
+          // Legacy sync
+          const localKey = `neon-rider-highscore-${user.id}`;
+          const localBest = Number(localStorage.getItem(localKey) || 0);
+          if (localBest > data.personalBest) {
+             await fetch(`/api/games/neon-rider/scores`, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ score: localBest })
+             });
+             setHighScore(localBest);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch scores", e);
+      }
+    };
+    fetchScores();
+  }, [user]);
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-500">
@@ -943,8 +999,12 @@ export function NeonRider({ onBack }: NeonRiderProps) {
 
         <div className="flex items-center gap-8">
           <div className="text-center">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mb-1">{t('games.neonRider.highScore')}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mb-1">{t('games.personalRecord')}</p>
             <p className="text-xl font-black font-display text-primary leading-none">{highScore.toLocaleString()}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mb-1">{t('games.globalRecord')}</p>
+            <p className="text-xl font-black font-display text-white/50 leading-none">{globalRecord.toLocaleString()}</p>
           </div>
           <div className="text-center flex items-baseline gap-2">
             <div>
@@ -974,10 +1034,18 @@ export function NeonRider({ onBack }: NeonRiderProps) {
                 {t('games.neonRider.title')}
               </h2>
               
-              {highScore > 0 && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full">
-                  <Trophy className="w-3 h-3 text-primary" />
-                  <span className="text-[10px] font-black uppercase text-primary">{t('games.neonRider.highScore')}: {highScore}</span>
+               {highScore > 0 && (
+                <div className="flex flex-col gap-2 items-center">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full">
+                    <Trophy className="w-3 h-3 text-primary" />
+                    <span className="text-[10px] font-black uppercase text-primary">{t('games.personalRecord')}: {highScore}</span>
+                  </div>
+                  {globalRecord > 0 && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+                      <TrophyIcon className="w-3 h-3 text-white/30" />
+                      <span className="text-[10px] font-black uppercase text-muted-foreground">{t('games.globalRecord')}: {globalRecord}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1020,7 +1088,12 @@ export function NeonRider({ onBack }: NeonRiderProps) {
                 {displayScore.toLocaleString()}
               </h2>
               
-              {score === highScore && score > 0 && (
+              {isNewGlobalRecord ? (
+                <div className="flex items-center justify-center gap-2 text-white font-black uppercase tracking-widest text-xs mb-8 px-4 py-2 bg-primary/20 rounded-full border border-primary/50 animate-bounce">
+                  <TrophyIcon className="w-4 h-4 text-primary" />
+                  👑 NEW GLOBAL RECORD! 👑
+                </div>
+              ) : score === highScore && score > 0 && (
                 <div className="flex items-center justify-center gap-2 text-primary font-black uppercase tracking-widest text-xs mb-8 animate-bounce">
                   <Trophy className="w-4 h-4" />
                   New Personal Best!

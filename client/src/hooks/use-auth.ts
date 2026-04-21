@@ -13,7 +13,7 @@ export function useAuth() {
       const res = await fetch(api.auth.me.path, { credentials: "include" });
       if (res.status === 401) return null;
       if (!res.ok) throw new Error("Failed to fetch user");
-      return res.json(); // Replit's zod schemas can be tricky to parse if they use z.custom without implementations
+      return res.json();
     },
     staleTime: Infinity,
     retry: false,

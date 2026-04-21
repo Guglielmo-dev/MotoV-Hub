@@ -14,11 +14,12 @@ import { useToast } from '@/hooks/use-toast';
 interface LibrettoScannerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 type ScannerState = 'upload' | 'preview' | 'loading';
 
-export function LibrettoScanner({ open, onOpenChange }: LibrettoScannerProps) {
+export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScannerProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,6 +91,7 @@ export function LibrettoScanner({ open, onOpenChange }: LibrettoScannerProps) {
     scanMutation.mutate(selectedFile, {
       onSuccess: () => {
         onOpenChange(false);
+        if (onSuccess) onSuccess();
         toast({
           title: i18n.language === 'it' ? "Moto aggiunta! 🏍" : "Motorcycle added! 🏍",
           description: i18n.language === 'it'

@@ -144,6 +144,9 @@ export const it = {
     addMotorcycle: 'Aggiungi Moto',
     fromRegistration: 'Da Libretto',
     newMotorcycle: 'Nuova Moto',
+    aiFeatureTitle: 'Aggiunta Rapida IA',
+    aiFeatureDesc: 'Scansiona il libretto e aggiungi la moto istantaneamente.',
+    tryAITag: 'PROVAMI',
     noMotorcycles: 'Nessuna moto nel garage.',
     noMotorcyclesHint: 'Aggiungi la tua prima moto per iniziare.',
     brand: 'Marca',
@@ -302,6 +305,8 @@ export const it = {
   games: {
     title: 'GAMES HUB',
     subtitle: 'Prenditi una pausa e sfida i tuoi record.',
+    personalRecord: 'Record Personale',
+    globalRecord: 'Record Globale',
     neonRider: {
       title: 'Neon Rider',
       desc: 'Sfreccia sulla griglia neon, evita gli ostacoli e raccogli i Vault Coins.',
@@ -311,6 +316,67 @@ export const it = {
       score: 'Punteggio',
       start: 'Premi SPAZIO per iniziare',
       back: 'Torna all\'Hub',
+    },
+    motoQuiz: {
+      title: 'Moto Quiz',
+      desc: 'Metti alla prova la tua conoscenza sul mondo delle due ruote e della MotoGP.',
+      playNow: 'Inizia Quiz',
+      highScore: 'Record Personale',
+      gameOver: 'QUIZ COMPLETATO',
+      score: 'Punteggio Finale',
+      next: 'Prossima Domanda',
+      retry: 'Riprova',
+      questions: {
+        total: '{{current}} di {{total}}',
+        time: 'Tempo',
+        q1: {
+          text: 'Quanti titoli mondiali ha vinto Valentino Rossi nella sola classe regina (500cc/MotoGP)?',
+          o1: '7',
+          o2: '9',
+          o3: '8',
+          o4: '10',
+        },
+        q2: {
+          text: 'Quale costruttore ha vinto il titolo mondiale Piloti MotoGP 2023?',
+          o1: 'Yamaha',
+          o2: 'Ducati',
+          o3: 'Honda',
+          o4: 'KTM',
+        },
+        q3: {
+          text: 'In quale circuito si corre storicamente il Gran Premio d\'Italia?',
+          o1: 'Misano',
+          o2: 'Imola',
+          o3: 'Mugello',
+          o4: 'Monza',
+        }
+      }
+    }
+  },
+
+  // Notifiche
+  notifications: {
+    title: 'Inbox News',
+    empty: 'Nessuna novità al momento.',
+    send: 'Invia News',
+    delete: 'Elimina',
+    newBadge: 'New',
+    adminTitle: 'Invia Comunicazione',
+    placeholderTitle: 'Titolo della news...',
+    placeholderContent: 'Scrivi qui il messaggio per tutti gli utenti...',
+    success: 'News inviata con successo!',
+    deleted: 'News eliminata.',
+    type: {
+      info: 'Info',
+      success: 'Successo',
+      warning: 'Attenzione',
+      game: 'Nuovo Gioco'
+    },
+    chat: {
+      title: 'VaultBot - Assistente IA',
+      welcome: 'Ehi! Sono VaultBot. 🏍️ Come posso aiutarti oggi? Posso darti consigli tecnici, suggerire itinerari o rispondere a curiosità sulle moto.',
+      placeholder: 'Scrivi un messaggio...',
+      error: 'C\'è stato un problema con la connessione all\'IA. Riprova più tardi.',
     }
   },
 

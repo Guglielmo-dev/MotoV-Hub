@@ -69,6 +69,32 @@ export function Garage() {
               <DialogHeader className="pr-8">
                 <DialogTitle className="text-2xl font-display uppercase text-primary border-b border-white/10 pb-4">{t('garage.newMotorcycle')}</DialogTitle>
               </DialogHeader>
+
+              {/* AI Quick Add Trigger */}
+              <div className="mt-4 bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between group">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] bg-primary text-black font-black px-1.5 py-0.5 rounded tracking-tighter animate-pulse">
+                      {t('garage.tryAITag')}
+                    </span>
+                    <h4 className="text-sm font-bold text-primary uppercase tracking-tight">
+                      {t('garage.aiFeatureTitle')}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground pr-2">
+                    {t('garage.aiFeatureDesc')}
+                  </p>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setIsScannerOpen(true)}
+                  className="shrink-0 px-4 py-2 bg-zinc-900 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black hover:border-primary transition-all flex items-center gap-2 shadow-lg"
+                >
+                  <FileText className="w-4 h-4" />
+                  {t('garage.fromRegistration')}
+                </button>
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -106,17 +132,11 @@ export function Garage() {
             </DialogContent>
           </Dialog>
 
-          {/* From Registration Scanner */}
-          <button 
-            data-testid="button-from-registration" 
-            onClick={() => setIsScannerOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground font-semibold rounded-xl hover:bg-white/10 transition-all border border-white/5"
-          >
-            <FileText className="w-5 h-5" />
-            {t('garage.fromRegistration')}
-          </button>
-          
-          <LibrettoScanner open={isScannerOpen} onOpenChange={setIsScannerOpen} />
+          <LibrettoScanner 
+            open={isScannerOpen} 
+            onOpenChange={setIsScannerOpen} 
+            onSuccess={() => setIsOpen(false)}
+          />
         </div>
       </div>
 

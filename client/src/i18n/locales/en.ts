@@ -144,6 +144,9 @@ export const en = {
     addMotorcycle: 'Add Motorcycle',
     fromRegistration: 'From Registration',
     newMotorcycle: 'New Motorcycle',
+    aiFeatureTitle: 'AI Quick Add',
+    aiFeatureDesc: 'Scan your registration document and add your bike instantly.',
+    tryAITag: 'TRY ME',
     noMotorcycles: 'No motorcycles in your garage.',
     noMotorcyclesHint: 'Add your first motorcycle to get started.',
     brand: 'Brand',
@@ -302,6 +305,8 @@ export const en = {
   games: {
     title: 'GAMES HUB',
     subtitle: 'Take a break and challenge your records.',
+    personalRecord: 'Personal Record',
+    globalRecord: 'Global Record',
     neonRider: {
       title: 'Neon Rider',
       desc: 'Speed through the neon grid, avoid obstacles and collect Vault Coins.',
@@ -311,6 +316,67 @@ export const en = {
       score: 'Score',
       start: 'Press SPACE to start',
       back: 'Back to Hub',
+    },
+    motoQuiz: {
+      title: 'Moto Quiz',
+      desc: 'Test your knowledge about motorcycles and the MotoGP world.',
+      playNow: 'Start Quiz',
+      highScore: 'Personal Best',
+      gameOver: 'QUIZ COMPLETED',
+      score: 'Final Score',
+      next: 'Next Question',
+      retry: 'Retry',
+      questions: {
+        total: '{{current}} of {{total}}',
+        time: 'Time',
+        q1: {
+          text: 'How many world titles did Valentino Rossi win in the premier class (500cc/MotoGP)?',
+          o1: '7',
+          o2: '9',
+          o3: '8',
+          o4: '10',
+        },
+        q2: {
+          text: 'Which manufacturer won the 2023 MotoGP Riders World Championship?',
+          o1: 'Yamaha',
+          o2: 'Ducati',
+          o3: 'Honda',
+          o4: 'KTM',
+        },
+        q3: {
+          text: 'Which circuit historically hosts the Italian Grand Prix?',
+          o1: 'Misano',
+          o2: 'Imola',
+          o3: 'Mugello',
+          o4: 'Monza',
+        }
+      }
+    }
+  },
+
+  // Notifications
+  notifications: {
+    title: 'News Inbox',
+    empty: 'No news at the moment.',
+    send: 'Send News',
+    delete: 'Delete',
+    newBadge: 'New',
+    adminTitle: 'Send Communication',
+    placeholderTitle: 'News title...',
+    placeholderContent: 'Write the message for all users here...',
+    success: 'News sent successfully!',
+    deleted: 'News deleted.',
+    type: {
+      info: 'Info',
+      success: 'Success',
+      warning: 'Warning',
+      game: 'New Game'
+    },
+    chat: {
+      title: 'VaultBot - AI Assistant',
+      welcome: 'Hey there! I\'m VaultBot. 🏍️ How can I help you today? I can give technical tips, suggest routes, or answer curiosity about motorbikes.',
+      placeholder: 'Type a message...',
+      error: 'There was a problem connecting to the AI. Please try again later.',
     }
   },
 

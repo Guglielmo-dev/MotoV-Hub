@@ -1,6 +1,6 @@
 import {
   users, motorcycles, maintenance, modifications,
-  communityPosts, communityComments, communityLikes, travelLogs, customThemes, ratings,
+  communityPosts, communityComments, communityLikes, travelLogs, customThemes, ratings, notifications, gameScores,
   type User, type InsertUser,
   type Motorcycle, type InsertMotorcycle,
   type Maintenance, type InsertMaintenance,
@@ -10,6 +10,8 @@ import {
   type TravelLog, type InsertTravelLog,
   type CustomTheme, type InsertCustomTheme,
   type Rating, type InsertRating,
+  type Notification, type InsertNotification,
+  type GameScore, type InsertGameScore,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -75,6 +77,16 @@ export interface IStorage {
   getAverageRating(targetType: string, targetId: string): Promise<{ average: number; count: number }>;
   getUserRating(userId: number, targetType: string, targetId: string): Promise<number | null>;
   upsertRating(userId: number, rating: InsertRating): Promise<Rating>;
+
+  // Notifications
+  getNotifications(): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  deleteNotification(id: number): Promise<void>;
+  updateUserLastRead(userId: number): Promise<void>;
+
+  // Game Scores
+  getGameScores(gameId: string, userId?: number): Promise<{ personalBest: number; globalBest: number }>;
+  submitGameScore(userId: number, gameId: string, score: number): Promise<GameScore>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -334,6 +346,61 @@ export class DatabaseStorage implements IStorage {
       .values({ ...insertRating, userId })
       .returning();
     return newRating;
+  }
+
+  // Notifications Implementation
+  async getNotifications(): Promise<Notification[]> {
+    return db.select().from(notifications).orderBy(desc(notifications.createdAt));
+  }
+
+  async createNotification(data: InsertNotification): Promise<Notification> {
+    const [inserted] = await db.insert(notifications).values(data).returning();
+    return inserted;
+  }
+
+  async deleteNotification(id: number): Promise<void> {
+    await db.delete(notifications).where(eq(notifications.id, id));
+  }
+
+  async updateUserLastRead(userId: number): Promise<void> {
+    await db.update(users)
+      .set({ lastReadNotificationsAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async getGameScores(gameId: string, userId?: number): Promise<{ personalBest: number; globalBest: number }> {
+    // Global Best
+    const [globalBestRes] = await db
+      .select({ maxScore: sql<number>`max(${gameScores.score})` })
+      .from(gameScores)
+      .where(eq(gameScores.gameId, gameId));
+    
+    const globalBest = globalBestRes?.maxScore || 0;
+
+    // Personal Best
+    let personalBest = 0;
+    if (userId) {
+      const [personalBestRes] = await db
+        .select({ maxScore: sql<number>`max(${gameScores.score})` })
+        .from(gameScores)
+        .where(
+          and(
+            eq(gameScores.gameId, gameId),
+            eq(gameScores.userId, userId)
+          )
+        );
+      personalBest = personalBestRes?.maxScore || 0;
+    }
+
+    return { personalBest, globalBest };
+  }
+
+  async submitGameScore(userId: number, gameId: string, score: number): Promise<GameScore> {
+    const [gameScore] = await db
+      .insert(gameScores)
+      .values({ userId, gameId, score })
+      .returning();
+    return gameScore;
   }
 }
 

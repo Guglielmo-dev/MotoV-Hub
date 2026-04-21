@@ -24,6 +24,8 @@ export const users = pgTable("users", {
   customAudioName: text("custom_audio_name"),
   activeBrandId: text("active_brand_id").default('kawasaki'),
   activeCustomColor: text("active_custom_color"), // If set, activeBrandId should be treated as null
+  isAdmin: boolean("is_admin").default(false),
+  lastReadNotificationsAt: timestamp("last_read_notifications_at"),
 });
 
 export const motorcycles = pgTable("motorcycles", {
@@ -121,6 +123,22 @@ export const customThemes = pgTable("custom_themes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  type: text("type").notNull().default('info'), // 'info', 'success', 'warning', 'game'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const gameScores = pgTable("game_scores", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  gameId: text("game_id").notNull(), // 'moto-quiz', 'neon-rider'
+  score: integer("score").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   motorcycles: many(motorcycles),
   communityPosts: many(communityPosts),
@@ -128,6 +146,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   travelLogs: many(travelLogs),
   customThemes: many(customThemes),
   ratings: many(ratings),
+  gameScores: many(gameScores),
 }));
 
 export const motorcyclesRelations = relations(motorcycles, ({ one, many }) => ({
@@ -172,7 +191,11 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
   user: one(users, { fields: [ratings.userId], references: [users.id] }),
 }));
 
- export const insertUserSchema = createInsertSchema(users).pick({ 
+export const gameScoresRelations = relations(gameScores, ({ one }) => ({
+  user: one(users, { fields: [gameScores.userId], references: [users.id] }),
+}));
+
+export const insertUserSchema = createInsertSchema(users).pick({ 
   username: true, 
   password: true,
   email: true,
@@ -211,6 +234,9 @@ export const insertRatingSchema = createInsertSchema(ratings)
     score: z.number().min(1).max(5),
   });
 
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+export const insertGameScoreSchema = createInsertSchema(gameScores).omit({ id: true, createdAt: true });
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
@@ -239,3 +265,9 @@ export type InsertCustomTheme = z.infer<typeof insertCustomThemeSchema>;
 
 export type Rating = typeof ratings.$inferSelect;
 export type InsertRating = z.infer<typeof insertRatingSchema>;
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+export type GameScore = typeof gameScores.$inferSelect;
+export type InsertGameScore = z.infer<typeof insertGameScoreSchema>;
