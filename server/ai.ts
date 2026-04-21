@@ -26,18 +26,33 @@ export async function generateChatResponse(message: string, history: { role: 'us
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-flash-latest",
+      systemInstruction: {
+        role: "system",
+        parts: [{ text: SYSTEM_PROMPT.trim() }]
+      }
+    });
+    
     const chat = model.startChat({
       history: history,
-      systemInstruction: SYSTEM_PROMPT,
     });
 
     const result = await chat.sendMessage(message);
     const response = await result.response;
     return response.text();
-  } catch (error) {
-    console.error("AI Generation Error:", error);
-    throw new Error("Si è verificato un errore durante la generazione della risposta.");
+  } catch (error: any) {
+    console.error("AI Generation Error Detailed:", {
+      message: error?.message,
+      status: error?.status,
+      details: error?.response?.data
+    });
+    
+    // Check for specific error types
+    if (error?.message?.includes("API_KEY_INVALID")) {
+      throw new Error("La chiave API di Gemini non sembra valida. Controlla il file .env.");
+    }
+    
+    throw new Error(`Errore AI: ${error.message || "Problema nella generazione della risposta"}`);
   }
 }

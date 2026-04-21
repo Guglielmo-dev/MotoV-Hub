@@ -11,51 +11,75 @@ interface Message {
   content: string;
 }
 
-// Icona Casco Integrale Premium v2 - Profilo Aerodinamico Solido
+// Bot Icon - Robot Helmet Style (Premium Tech)
 const HelmetIcon = ({ className }: { className?: string }) => (
   <svg 
-    viewBox="0 0 64 64" 
-    className={cn("drop-shadow-[0_0_12px_rgba(34,197,94,0.45)]", className)}
+    viewBox="0 0 100 100" 
+    className={cn("drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]", className)}
     fill="none" 
     xmlns="http://www.w3.org/2000/svg"
   >
-    {/* Shell principale - Geometria solida e pulita */}
+    {/* Main Outer Shell */}
     <path 
-      d="M10 52C9 48 8 40 8 30C8 12 20 4 38 4C54 4 58 14 58 30C58 42 54 52 50 52H14L10 52Z" 
-      fill="#0A0A0A" 
-      stroke="#333" 
-      strokeWidth="1.5"
+      d="M25 45C25 30 35 20 50 20C65 20 75 30 75 45V75C75 80 70 85 65 85H35C30 85 25 80 25 75V45Z" 
+      stroke="currentColor" 
+      strokeWidth="3.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
     />
     
-    {/* Visiera Racing - Sottile e slanciata */}
-    <defs>
-      <linearGradient id="visorProfileGradV2" x1="20" y1="18" x2="56" y2="34" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#1a1a1a" />
-        <stop offset="50%" stopColor="#252525" />
-        <stop offset="100%" stopColor="#1a1a1a" />
-      </linearGradient>
-    </defs>
+    {/* Forehead Section */}
     <path 
-      d="M20 18C20 18 45 15 54 19C57 20 57 32 54 34C45 38 25 36 20 34V18Z" 
-      fill="url(#visorProfileGradV2)" 
-      stroke="#22c55e" 
-      strokeOpacity="0.7"
-      strokeWidth="1"
+      d="M40 20L44 32H56L60 20" 
+      stroke="currentColor" 
+      strokeWidth="3" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
     />
 
-    {/* Meccanismo Rotazione Laterale */}
-    <circle cx="20" cy="26" r="4" fill="#111" stroke="#333" strokeWidth="0.5" />
-    <circle cx="20" cy="26" r="1.5" fill="#22c55e" fillOpacity="0.5" />
+    {/* Visor Area */}
+    <path 
+      d="M30 48C30 42 35 40 50 40C65 40 70 42 70 48V58C70 64 65 66 50 66C35 66 30 64 30 58V48Z" 
+      fill="currentColor" 
+      fillOpacity="0.1"
+      stroke="currentColor" 
+      strokeWidth="3.5" 
+    />
 
-    {/* Presa d'aria Mentoniera Style */}
-    <path d="M48 44H54L56 48H46L48 44Z" fill="#151515" stroke="#22c55e" strokeOpacity="0.4" strokeWidth="0.5" />
-    <rect x="50" y="45" width="2" height="1" rx="0.5" fill="#22c55e" fillOpacity="0.8" />
+    {/* Visor Inner Light/Glow */}
+    <path 
+      d="M34 50C34 46 38 44 50 44C62 44 66 46 66 50V56C66 60 62 62 50 62C38 62 34 60 34 56V50Z" 
+      fill="currentColor" 
+      fillOpacity="0.8"
+    />
 
-    {/* Riflesso Curvato Calotta */}
-    <path d="M20 8C20 8 30 6 40 6" stroke="white" strokeOpacity="0.08" strokeWidth="2" strokeLinecap="round" />
+    {/* Robot Eyes (Glow) */}
+    <ellipse cx="43" cy="53" rx="3.5" ry="5.5" fill="black" />
+    <ellipse cx="57" cy="53" rx="3.5" ry="5.5" fill="black" />
 
-    {/* Linea di base Neon */}
-    <path d="M12 52H50" stroke="#22c55e" strokeWidth="1.5" strokeOpacity="0.4" strokeLinecap="round" />
+    {/* Side Ear Panels */}
+    <path 
+      d="M25 50H21V70H25" 
+      stroke="currentColor" 
+      strokeWidth="3" 
+      strokeLinecap="round" 
+    />
+    <path 
+      d="M75 50H79V70H75" 
+      stroke="currentColor" 
+      strokeWidth="3" 
+      strokeLinecap="round" 
+    />
+
+    {/* Antennas */}
+    <line x1="21" y1="50" x2="21" y2="35" stroke="currentColor" strokeWidth="2.5" />
+    <circle cx="21" cy="35" r="2.5" fill="currentColor" />
+    
+    <line x1="79" y1="50" x2="79" y2="35" stroke="currentColor" strokeWidth="2.5" />
+    <circle cx="79" cy="35" r="2.5" fill="currentColor" />
+
+    {/* Chin Detail */}
+    <path d="M44 85V75H56V85" stroke="currentColor" strokeWidth="3" />
   </svg>
 );
 
