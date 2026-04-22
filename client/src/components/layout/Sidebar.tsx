@@ -7,7 +7,9 @@ import { useAuth, useLogout, useUpdateUsername } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { SettingsTrigger } from "@/components/SettingsModal";
+import { UserProfileModal } from "./UserProfileModal";
 import { useTranslation } from "react-i18next";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 import { prefetchPage, PageName } from "@/lib/route-prefetch";
 
@@ -31,26 +33,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [editUsername, setEditUsername] = useState("");
-  const { mutate: updateUsername, isPending: isUpdating } = useUpdateUsername();
-
-  // Update editUsername field when user data changes
-  useEffect(() => {
-    if (user?.username) {
-      setEditUsername(user.username);
-    }
-  }, [user?.username]);
-
-  const handleUpdateUsername = () => {
-    if (!editUsername || editUsername === user?.username) {
-      setIsEditingUsername(false);
-      return;
-    }
-    updateUsername(editUsername, {
-      onSuccess: () => setIsEditingUsername(false),
-    });
-  };
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const links: { href: string; label: string; icon: any; exact: boolean; page: PageName }[] = [
     { href: "/", label: t('nav.dashboard'), icon: LayoutDashboard, exact: true, page: 'Dashboard' },
@@ -138,51 +121,32 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             )}
           </div>
         ) : user ? (
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-6'}`} title={collapsed ? user.username : undefined}>
-            <div 
-              className="w-9 h-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm"
-            >
-              {getInitials(user.username)}
-            </div>
+          <div 
+            onClick={() => setIsProfileOpen(true)}
+            className={`
+              flex items-center cursor-pointer group/user-block transition-all duration-300 hover:bg-white/5 mx-2 rounded-xl py-2
+              ${collapsed ? 'justify-center' : 'gap-3 px-4'}
+            `} 
+            title={collapsed ? user.username : undefined}
+          >
+            <Avatar className={`w-9 h-9 border border-primary/20 transition-transform group-hover/user-block:scale-105 ${collapsed ? '' : 'flex-shrink-0'}`}>
+              <AvatarImage 
+                key={user.avatarUrl} 
+                src={user.avatarUrl || undefined} 
+                className="object-cover" 
+              />
+              <AvatarFallback className="bg-primary/20 text-primary font-bold text-xs uppercase">
+                {getInitials(user.username)}
+              </AvatarFallback>
+            </Avatar>
+            
             {!collapsed && (
               <div className="flex flex-col min-w-0 flex-1">
-                {isEditingUsername ? (
-                  <div className="flex items-center gap-1 w-full">
-                    <input
-                      autoFocus
-                      type="text"
-                      className="bg-white/5 border border-white/10 rounded px-2 py-0.5 text-xs text-foreground outline-none focus:border-primary/50 w-full"
-                      value={editUsername}
-                      onChange={(e) => setEditUsername(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleUpdateUsername();
-                        if (e.key === 'Escape') setIsEditingUsername(false);
-                      }}
-                      disabled={isUpdating}
-                    />
-                    <button onClick={handleUpdateUsername} disabled={isUpdating} className="text-primary hover:scale-110 transition-transform">
-                      <Check className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => setIsEditingUsername(false)} disabled={isUpdating} className="text-muted-foreground hover:text-foreground">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 group/user-title">
-                    <span className="text-sm font-display font-bold uppercase tracking-wider text-foreground truncate">
-                      {user.username}
-                    </span>
-                    <button 
-                      onClick={() => {
-                        setEditUsername(user.username);
-                        setIsEditingUsername(true);
-                      }}
-                      className="opacity-0 group-hover/user-title:opacity-100 p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-primary transition-all"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-display font-bold uppercase tracking-wider text-foreground truncate group-hover/user-block:text-primary transition-colors">
+                    {user.username}
+                  </span>
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
@@ -194,6 +158,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </div>
         ) : null}
       </div>
+
+      <UserProfileModal 
+        open={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+      />
 
       {/* Bottom Actions */}
       <div className={`pb-6 space-y-2 mt-auto ${collapsed ? 'px-3' : 'px-4'}`}>

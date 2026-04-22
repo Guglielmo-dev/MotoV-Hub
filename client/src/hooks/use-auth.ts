@@ -124,6 +124,64 @@ export function useUpdateUsername() {
   });
 }
 
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: { username: string; email: string }) => {
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to update profile");
+      }
+      return res.json();
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData([api.auth.me.path], updatedUser);
+      toast({ title: "Profilo aggiornato", description: "Le tue informazioni sono state salvate." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Errore aggiornamento", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useUpdateAvatar() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const res = await fetch('/api/user/avatar', {
+        method: 'POST',
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to upload avatar");
+      }
+      return res.json();
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData([api.auth.me.path], updatedUser);
+      toast({ title: "Avatar aggiornato", description: "La tua foto profilo è stata cambiata." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Errore upload", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useDeleteAccount() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

@@ -214,6 +214,14 @@ export const insertUserSchema = createInsertSchema(users).pick({
     .optional(), // Optional for Google OAuth
 });
 
+export const updateProfileSchema = z.object({
+  username: z.string().min(3, "Lo username deve essere di almeno 3 caratteri"),
+  email: z.string().email("Inserisci un'email valida"),
+  avatarUrl: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
 export const updateUsernameSchema = z.object({
   username: z.string().min(3, "Lo username deve essere di almeno 3 caratteri"),
 });

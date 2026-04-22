@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Gamepad2, Trophy, Play, Sparkles, BrainCircuit, Zap, LucideIcon } from "lucide-react";
+import { Gamepad2, Trophy, Play, Sparkles, BrainCircuit, Zap, Activity, LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NeonRider } from "./games/NeonRider";
 import { MotoQuiz } from "./games/MotoQuiz";
+import { TrafficDodge2D } from "./games/TrafficDodge2D";
 import { RatingSystem } from "@/components/ui/RatingSystem";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,16 @@ export function Games() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const AVAILABLE_GAMES: GameData[] = [
+    {
+      id: 'traffic-dodge',
+      titleKey: 'games.trafficDodge.title',
+      descKey: 'games.trafficDodge.desc',
+      icon: Activity,
+      category: 'Arcade',
+      color: 'primary',
+      isAvailable: true,
+      type: 'Racing'
+    },
     {
       id: 'neon-rider',
       titleKey: 'games.neonRider.title',
@@ -45,11 +56,9 @@ export function Games() {
     }
   ];
 
-  const UPCOMING_GAMES = [
-    { title: 'Traffic Dodge', type: 'Survive', progress: 'Planned' }
-  ];
+  const UPCOMING_GAMES: any[] = [];
 
-  const filteredGames = activeCategory 
+  const filteredGames = activeCategory
     ? AVAILABLE_GAMES.filter(g => g.category === activeCategory)
     : AVAILABLE_GAMES;
 
@@ -59,6 +68,10 @@ export function Games() {
 
   if (activeGame === 'moto-quiz') {
     return <MotoQuiz onBack={() => setActiveGame(null)} />;
+  }
+
+  if (activeGame === 'traffic-dodge') {
+    return <TrafficDodge2D onBack={() => setActiveGame(null)} />;
   }
 
   return (
@@ -83,7 +96,7 @@ export function Games() {
         <div className="lg:col-span-8 space-y-8">
           {filteredGames.length > 0 ? (
             filteredGames.map((game, idx) => (
-              <div 
+              <div
                 key={game.id}
                 className="relative group overflow-hidden rounded-[2.5rem] border border-white/10 surface-premium transition-all duration-500 hover:border-primary/30 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 duration-500"
               >
@@ -102,7 +115,7 @@ export function Games() {
                       </span>
                       <RatingSystem targetType="game" targetId={game.id} showCount />
                     </div>
-                    
+
                     <h2 className="text-4xl sm:text-5xl font-black font-display uppercase tracking-tighter text-white group-hover:text-primary transition-colors">
                       {t(game.titleKey)}
                     </h2>
@@ -112,7 +125,7 @@ export function Games() {
                   </div>
 
                   <div className="flex flex-col items-center gap-4">
-                    <button 
+                    <button
                       onClick={() => setActiveGame(game.id)}
                       className="w-full md:w-auto min-w-[180px] flex items-center justify-center gap-3 px-8 py-5 bg-primary text-black font-black uppercase tracking-widest rounded-[1.25rem] hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(var(--primary),0.2)] group-hover:shadow-[0_0_40px_rgba(var(--primary),0.4)]"
                     >
@@ -130,7 +143,7 @@ export function Games() {
             <div className="flex flex-col items-center justify-center py-20 bg-white/5 border border-dashed border-white/10 rounded-[2.5rem]">
               <Gamepad2 className="w-12 h-12 text-muted-foreground/20 mb-4" />
               <p className="text-muted-foreground font-mono text-[10px] uppercase tracking-widest">Nessun gioco trovato in questa categoria.</p>
-              <button 
+              <button
                 onClick={() => setActiveCategory(null)}
                 className="mt-6 text-primary text-[10px] font-black uppercase tracking-widest border-b border-primary/30 pb-1"
               >
@@ -148,13 +161,13 @@ export function Games() {
               {['Arcade', 'Racing', 'Motorcycle', 'Retro', 'Neon', 'Trivia'].map(cat => {
                 const isActive = activeCategory === cat;
                 return (
-                  <button 
-                    key={cat} 
+                  <button
+                    key={cat}
                     onClick={() => setActiveCategory(isActive ? null : cat)}
                     className={cn(
                       "px-4 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all",
-                      isActive 
-                        ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_rgba(var(--primary),0.2)]" 
+                      isActive
+                        ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_rgba(var(--primary),0.2)]"
                         : "bg-white/5 border-white/5 text-muted-foreground hover:border-white/20 hover:text-white"
                     )}
                   >
@@ -169,9 +182,9 @@ export function Games() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl -mr-16 -mt-16 group-hover:bg-primary/20 transition-all duration-700" />
             <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-6 opacity-60">Future Releases</h3>
             <div className="space-y-4">
-              {UPCOMING_GAMES.map(item => (
-                <div 
-                  key={item.title} 
+              {UPCOMING_GAMES.length > 0 ? UPCOMING_GAMES.map(item => (
+                <div
+                  key={item.title}
                   className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-black/40 border border-white/5 opacity-60"
                 >
                   <div className="flex items-center gap-4">
@@ -187,7 +200,9 @@ export function Games() {
                     {item.progress}
                   </span>
                 </div>
-              ))}
+              )) : (
+                <p className="text-xs text-muted-foreground italic">Nessun rilascio pianificato.</p>
+              )}
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "react-i18next";
 import { NotificationInbox } from "./NotificationInbox";
 import { ChatBot } from "./ChatBot";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -69,11 +70,16 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* User Profile Mobile */}
           {user && (
             <div className="flex items-center gap-4 pt-4 pb-6 border-b border-white/5 mb-6 px-2">
-              <div 
-                className="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center flex-shrink-0 text-primary font-bold text-base"
-              >
-                {getInitials(user.username)}
-              </div>
+              <Avatar className="w-10 h-10 border border-primary/20">
+                <AvatarImage 
+                  key={user.avatarUrl} 
+                  src={user.avatarUrl || undefined} 
+                  className="object-cover" 
+                />
+                <AvatarFallback className="bg-primary/20 text-primary font-bold text-base uppercase">
+                  {getInitials(user.username)}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex flex-col min-w-0">
                 <span className="text-lg font-display font-bold uppercase tracking-wider text-foreground truncate leading-none mb-1">
                   {user.username}

@@ -137,6 +137,26 @@ export const it = {
     deleteAccountCTA: 'Spegni definitivamente il motore',
   },
 
+  // Sidebar
+  sidebar: {
+    profile: 'Profilo Utente',
+    changeAvatar: 'Clicca per cambiare avatar',
+  },
+
+  // Profilo
+  profile: {
+    title: 'PROFILO UTENTE',
+    subtitle: 'Gestisci le tue informazioni personali',
+    username: 'Username',
+    email: 'Email',
+    saveChanges: 'Salva Modifiche',
+    cancel: 'Annulla',
+    defaultAvatars: 'Avatar Predefiniti',
+    uploadSuccess: 'Avatar aggiornato',
+    updateSuccess: 'Profilo aggiornato',
+    updateError: 'Errore aggiornamento',
+  },
+
   // Garage
   garage: {
     title: 'IL MIO GARAGE',
@@ -307,6 +327,18 @@ export const it = {
     subtitle: 'Prenditi una pausa e sfida i tuoi record.',
     personalRecord: 'Record Personale',
     globalRecord: 'Record Globale',
+    trafficDodge: {
+      title: 'Traffic Dodge',
+      desc: 'Schiva il traffico, sopravvivi il più a lungo possibile e stabilisci un nuovo record.',
+      playNow: 'Gioca Ora',
+      highScore: 'Record Personale',
+      gameOver: 'SCHIANTO',
+      score: 'Punteggio',
+      finalScore: 'Punteggio Finale',
+      playAgain: 'Gioca Ancora',
+      controls: 'Usa A/D o Frecce per sterzare',
+      back: 'Torna all\'Hub',
+    },
     neonRider: {
       title: 'Neon Rider',
       desc: 'Sfreccia sulla griglia neon, evita gli ostacoli e raccogli i Vault Coins.',

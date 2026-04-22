@@ -21,7 +21,8 @@ import {
   insertTravelLogSchema,
   insertCustomThemeSchema,
   insertNotificationSchema,
-  updateUsernameSchema
+  updateUsernameSchema,
+  updateProfileSchema
 } from "@shared/schema";
 import { subMonths, format, parse, isValid, startOfMonth } from 'date-fns';
 import { generateChatResponse } from "./ai";
@@ -918,6 +919,60 @@ Regole importanti:
       });
     } catch (e) {
       next(e);
+    }
+  });
+
+  app.patch('/api/user', requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const data = updateProfileSchema.parse(req.body);
+      
+      // Se lo username cambia, verifica che non sia già preso
+      if (data.username) {
+        const existing = await storage.getUserByUsername(data.username);
+        if (existing && existing.id !== userId) {
+          return res.status(400).json({ message: "Username già occupato" });
+        }
+      }
+
+      const updated = await storage.updateUserPreferences(userId, data);
+      res.json(sanitizeUser(updated));
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.issues[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    }
+  });
+
+  app.post('/api/user/avatar', requireAuth, uploadLimiter, upload.single('avatar'), async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      if (!req.file) return res.status(400).json({ message: "Nessun file caricato" });
+
+      const fileExt = path.extname(req.file.originalname);
+      const fileName = `avatar_${userId}_${Date.now()}${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('motorcycle-photos') // Riutilizziamo lo stesso bucket
+        .upload(filePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: true
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('motorcycle-photos')
+        .getPublicUrl(filePath);
+
+      const updated = await storage.updateUserPreferences(userId, { avatarUrl: publicUrl });
+      res.json(sanitizeUser(updated));
+    } catch (err) {
+      console.error("Avatar Upload Error:", err);
+      res.status(500).json({ message: 'Errore durante l\'upload dell\'avatar' });
     }
   });
 

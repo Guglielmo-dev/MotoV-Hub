@@ -26,14 +26,14 @@ export async function generateChatResponse(message: string, history: { role: 'us
   }
 
   try {
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: "gemini-flash-latest",
       systemInstruction: {
         role: "system",
         parts: [{ text: SYSTEM_PROMPT.trim() }]
       }
     });
-    
+
     const chat = model.startChat({
       history: history,
     });
@@ -47,12 +47,12 @@ export async function generateChatResponse(message: string, history: { role: 'us
       status: error?.status,
       details: error?.response?.data
     });
-    
+
     // Check for specific error types
     if (error?.message?.includes("API_KEY_INVALID")) {
       throw new Error("La chiave API di Gemini non sembra valida. Controlla il file .env.");
     }
-    
+
     throw new Error(`Errore AI: ${error.message || "Problema nella generazione della risposta"}`);
   }
 }
