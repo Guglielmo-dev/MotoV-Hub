@@ -327,6 +327,13 @@ export const it = {
     subtitle: 'Prenditi una pausa e sfida i tuoi record.',
     personalRecord: 'Record Personale',
     globalRecord: 'Record Globale',
+    playNow: 'Gioca Ora',
+    futureReleases: 'Prossimi Rilasci',
+    noReleases: 'Nessun rilascio pianificato.',
+    helmetHero: {
+      title: 'Helmet Hero: Quiz Rush',
+      desc: 'Sfida la polizia in un inseguimento mozzafiato! Rispondi ai quiz per accelerare e fuggire.',
+    },
     trafficDodge: {
       title: 'Traffic Dodge',
       desc: 'Schiva il traffico, sopravvivi il più a lungo possibile e stabilisci un nuovo record.',
@@ -337,16 +344,6 @@ export const it = {
       finalScore: 'Punteggio Finale',
       playAgain: 'Gioca Ancora',
       controls: 'Usa A/D o Frecce per sterzare',
-      back: 'Torna all\'Hub',
-    },
-    neonRider: {
-      title: 'Neon Rider',
-      desc: 'Sfreccia sulla griglia neon, evita gli ostacoli e raccogli i Vault Coins.',
-      playNow: 'Gioca Ora',
-      highScore: 'Record Personale',
-      gameOver: 'GAME OVER',
-      score: 'Punteggio',
-      start: 'Premi SPAZIO per iniziare',
       back: 'Torna all\'Hub',
     },
     motoQuiz: {

@@ -327,6 +327,13 @@ export const en = {
     subtitle: 'Take a break and challenge your records.',
     personalRecord: 'Personal Record',
     globalRecord: 'Global Record',
+    playNow: 'Play Now',
+    futureReleases: 'Future Releases',
+    noReleases: 'No releases planned.',
+    helmetHero: {
+      title: 'Helmet Hero: Quiz Rush',
+      desc: 'Escape the police in a high-speed chase! Answer quizzes to accelerate and get away.',
+    },
     trafficDodge: {
       title: 'Traffic Dodge',
       desc: 'Dodge traffic, survive as long as possible, and set a new high score.',
@@ -337,16 +344,6 @@ export const en = {
       finalScore: 'Final Score',
       playAgain: 'Play Again',
       controls: 'Use A/D or Arrow Keys to steer',
-      back: 'Back to Hub',
-    },
-    neonRider: {
-      title: 'Neon Rider',
-      desc: 'Speed through the neon grid, avoid obstacles and collect Vault Coins.',
-      playNow: 'Play Now',
-      highScore: 'Personal Best',
-      gameOver: 'GAME OVER',
-      score: 'Score',
-      start: 'Press SPACE to start',
       back: 'Back to Hub',
     },
     motoQuiz: {

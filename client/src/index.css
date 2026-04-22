@@ -161,3 +161,28 @@
     display: none;
   }
 }
+
+.markdown-content strong {
+  color: hsl(var(--primary));
+  text-shadow: 0 0 8px hsl(var(--primary) / 0.3);
+  font-weight: 800;
+}
+
+.markdown-content ul {
+  list-style-type: none;
+  padding-left: 0.5rem;
+}
+
+.markdown-content li {
+  position: relative;
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: hsl(var(--primary));
+  font-weight: bold;
+}

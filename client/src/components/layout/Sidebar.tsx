@@ -50,8 +50,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     >
       {/* Header */}
       <div className={`flex items-center border-b border-white/5 h-20 relative ${collapsed ? 'justify-center px-0' : 'px-6 gap-3'}`}>
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 glow-green">
-          <Bike className="w-6 h-6 text-black" />
+        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0 border border-primary/30 overflow-hidden glow-green">
+          <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
         </div>
         {!collapsed && (
           <div className="flex flex-col">

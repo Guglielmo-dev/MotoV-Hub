@@ -68,7 +68,7 @@ export function Dashboard() {
       </div>
 
       {/* KPI Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
         <StatCard 
           title={t('dashboard.totalMotorcycles')} 
           value={summary?.motorcycleCount || 0} 
@@ -83,11 +83,6 @@ export function Dashboard() {
           title={t('dashboard.totalExpenses')} 
           value={`${t('units.currency')}${Number(summary?.totalExpenses || 0).toLocaleString()}`} 
           icon={CircleDollarSign}
-        />
-        <StatCard 
-          title={t('dashboard.communityRank')} 
-          value="#12" 
-          icon={GraduationCap}
         />
       </div>
 
@@ -158,27 +153,6 @@ export function Dashboard() {
         {/* Right Column: Widgets */}
         <div className="space-y-8">
           <MaintenanceWidget data={summary?.maintenanceSoon || []} />
-          
-          {/* Quick Actions / Snapshot Widget */}
-          <div className="surface-premium p-6 rounded-2xl group overflow-hidden relative">
-            <h3 className="text-xl font-black font-display text-foreground tracking-tight mb-6 uppercase flex items-center gap-2">
-              <ArrowUpRight className="w-5 h-5 text-primary" />
-              {t('dashboard.quickActions')}
-            </h3>
-            <div className="grid grid-cols-2 gap-4 relative z-10">
-              <button className="h-24 bg-white/3 border border-white/5 rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-primary/10 hover:border-primary/30 transition-all group/btn">
-                <Bike className="w-6 h-6 text-muted-foreground group-hover/btn:text-primary transition-colors" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover/btn:text-foreground">{t('dashboard.addBike')}</span>
-              </button>
-              <button className="h-24 bg-white/3 border border-white/5 rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-primary/10 hover:border-primary/30 transition-all group/btn">
-                <CircleDollarSign className="w-6 h-6 text-muted-foreground group-hover/btn:text-primary transition-colors" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover/btn:text-foreground">{t('dashboard.newExpense')}</span>
-              </button>
-            </div>
-            
-            {/* Background design element */}
-            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all" />
-          </div>
         </div>
       </div>
     </div>

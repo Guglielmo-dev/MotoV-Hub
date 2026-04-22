@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RefreshCw, Gamepad2, Play, Lightbulb } from "lucide-react";
+import { ArrowLeft, Trophy, RefreshCw, Gamepad2, Play, Lightbulb, Bike as BikeIcon, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
+import { useMotorcycles } from "@/hooks/use-motorcycles";
 import { cn } from "@/lib/utils";
+import { type Motorcycle } from "@shared/schema";
 
 interface TrafficDodge2DProps {
   onBack: () => void;
@@ -12,11 +14,26 @@ export function TrafficDodge2D({ onBack }: TrafficDodge2DProps) {
   const { t } = useTranslation();
   const { data: user } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [gameState, setGameState] = useState<'start' | 'playing' | 'gameover'>('start');
+  const [gameState, setGameState] = useState<'start' | 'setup' | 'playing' | 'gameover'>('start');
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [primaryColor, setPrimaryColor] = useState('#00FF41');
+  const [selectedBike, setSelectedBike] = useState<Motorcycle | null>(null);
+  const [selectionIndex, setSelectionIndex] = useState(0);
   const [highBeamActive, setHighBeamActive] = useState(false);
+  const { data: motorcycles } = useMotorcycles();
+
+  const getBrandColor = (brand: string) => {
+    const b = brand.toLowerCase();
+    if (b.includes('kawasaki')) return '#00FF41';
+    if (b.includes('ducati')) return '#FF0000';
+    if (b.includes('yamaha')) return '#0000FF';
+    if (b.includes('honda')) return '#FF4500';
+    if (b.includes('suzuki')) return '#1B458F';
+    if (b.includes('ktm')) return '#FF6600';
+    if (b.includes('bmw')) return '#00BFFF';
+    return null;
+  };
 
   const triggerHighBeam = () => {
     if (gameState === 'playing') {
@@ -52,8 +69,24 @@ export function TrafficDodge2D({ onBack }: TrafficDodge2DProps) {
     setPrimaryColor(resolvedColor);
   }, []);
 
-  const startGame = () => {
+  const startGame = (bike: Motorcycle | null = null) => {
     const laneW = (canvasRef.current?.parentElement?.clientWidth || 400) / 4;
+    
+    // Determine color
+    let color = '#00FF41';
+    if (bike) {
+      color = getBrandColor(bike.brand) || '#00FF41';
+    } else {
+      const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--primary');
+      const temp = document.createElement('div');
+      temp.style.color = `hsl(${themeColor})`;
+      document.body.appendChild(temp);
+      color = getComputedStyle(temp).color || '#00FF41';
+      document.body.removeChild(temp);
+    }
+    
+    setPrimaryColor(color);
+    setSelectedBike(bike);
     setGameState('playing');
     setScore(0);
     gameRef.current = {
@@ -511,7 +544,7 @@ export function TrafficDodge2D({ onBack }: TrafficDodge2DProps) {
               {t('games.trafficDodge.desc', 'Dodge traffic, survive as long as possible, and set a new high score.')}
             </p>
             <button
-              onClick={startGame}
+              onClick={() => setGameState('setup')}
               className="flex items-center gap-3 px-8 py-4 bg-primary text-black font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(var(--primary),0.3)]"
             >
               <Play className="w-5 h-5 fill-current" />
@@ -520,6 +553,87 @@ export function TrafficDodge2D({ onBack }: TrafficDodge2DProps) {
             <p className="mt-6 text-[10px] font-mono text-muted-foreground uppercase tracking-widest opacity-50">
               {t('games.trafficDodge.controls', 'Use A/D or Arrow Keys to steer')}
             </p>
+          </div>
+        )}
+
+        {gameState === 'setup' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-6 text-center z-20 animate-in fade-in zoom-in-95 duration-500">
+            <h3 className="text-xl font-black uppercase tracking-widest mb-8 text-primary">Seleziona la tua Moto</h3>
+            
+            <div className="grid grid-cols-1 gap-6 w-full max-w-sm">
+              {/* Default Bike Card */}
+              <button
+                onClick={() => startGame(null)}
+                className="group relative flex flex-col items-center p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-primary/50 hover:bg-primary/5 transition-all"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <BikeIcon className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+                </div>
+                <span className="font-black uppercase tracking-widest text-sm mb-1">Moto di Default</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase">Kawasaki Style</span>
+              </button>
+
+              {/* Garage Bike Card */}
+              <div className="relative">
+                {(!motorcycles || motorcycles.length === 0) ? (
+                  <div className="flex flex-col items-center p-6 rounded-3xl bg-white/5 border border-white/10 opacity-50 grayscale">
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-4">
+                      <Trophy className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <span className="font-black uppercase tracking-widest text-sm mb-1">Il Tuo Garage</span>
+                    <span className="text-[10px] font-mono text-muted-foreground uppercase">Nessuna moto disponibile</span>
+                  </div>
+                ) : motorcycles.length === 1 ? (
+                  <button
+                    onClick={() => startGame(motorcycles[0])}
+                    className="w-full group relative flex flex-col items-center p-6 rounded-3xl bg-primary/10 border border-primary/30 hover:border-primary hover:bg-primary/20 transition-all shadow-[0_0_20px_rgba(var(--primary),0.1)]"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <BikeIcon className="w-6 h-6 text-primary" />
+                    </div>
+                    <span className="font-black uppercase tracking-widest text-sm mb-1">{motorcycles[0].model}</span>
+                    <span className="text-[10px] font-mono text-primary uppercase tracking-tighter font-bold">{motorcycles[0].brand}</span>
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-center p-6 rounded-3xl bg-primary/10 border border-primary/30 shadow-[0_0_20px_rgba(var(--primary),0.1)]">
+                    <div className="flex items-center justify-between w-full mb-4 px-2">
+                      <button 
+                        onClick={() => setSelectionIndex(prev => (prev - 1 + motorcycles.length) % motorcycles.length)}
+                        className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <div className="flex flex-col items-center">
+                        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center mb-2">
+                          <BikeIcon className="w-5 h-5 text-primary" />
+                        </div>
+                        <span className="font-black uppercase tracking-tight text-xs">{motorcycles[selectionIndex].model}</span>
+                        <span className="text-[8px] font-mono text-primary uppercase font-bold">{motorcycles[selectionIndex].brand}</span>
+                      </div>
+                      <button 
+                        onClick={() => setSelectionIndex(prev => (prev + 1) % motorcycles.length)}
+                        className="p-2 rounded-full hover:bg-primary/20 text-primary transition-colors"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => startGame(motorcycles[selectionIndex])}
+                      className="w-full py-3 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)]"
+                    >
+                      Seleziona
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setGameState('start')}
+              className="mt-8 text-[10px] font-mono text-muted-foreground uppercase tracking-widest hover:text-white transition-colors"
+            >
+              Annulla
+            </button>
           </div>
         )}
 
@@ -533,7 +647,7 @@ export function TrafficDodge2D({ onBack }: TrafficDodge2DProps) {
             </p>
             
             <button
-              onClick={startGame}
+              onClick={() => setGameState('setup')}
               className="flex items-center gap-3 px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all"
             >
               <RefreshCw className="w-5 h-5" />

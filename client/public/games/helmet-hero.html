@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helmet Hero: Quiz Rush</title>
+    <style>
+        :root {
+            --primary: #00FF41;
+            --danger: #ff4444;
+            --bg: #0a0a0a;
+            --card: #1a1a1a;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 700px;
+            background: #111;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8), 0 0 20px rgba(0,255,65,0.1);
+            border: 2px solid #333;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* UI Overlays */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            padding: 30px;
+            text-align: center;
+            transition: opacity 0.3s;
+        }
+
+        .hidden { display: none !important; }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 5px;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            font-weight: 900;
+            text-shadow: 0 0 20px rgba(0,255,65,0.5);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            color: white;
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        p { color: #888; margin-bottom: 30px; line-height: 1.6; font-size: 0.9rem; }
+
+        .btn {
+            background: var(--primary);
+            color: black;
+            border: none;
+            padding: 18px 45px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            border-radius: 14px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 5px 15px rgba(0,255,65,0.2);
+        }
+
+        .btn:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,255,65,0.4);
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .distance-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            margin-top: 12px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        #police-dist {
+            height: 100%;
+            background: linear-gradient(90deg, var(--danger), var(--primary));
+            width: 50%;
+            transition: width 0.3s ease-out;
+            box-shadow: 0 0 10px rgba(0,255,65,0.3);
+        }
+
+        #stats {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            color: var(--primary);
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        /* Quiz UI */
+        #quiz-overlay {
+            position: absolute;
+            bottom: 30px;
+            left: 15px;
+            right: 15px;
+            background: rgba(20, 20, 20, 0.98);
+            border: 2px solid var(--primary);
+            border-radius: 24px;
+            padding: 25px;
+            z-index: 80;
+            transform: translateY(250%);
+            transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            box-shadow: 0 -20px 50px rgba(0,0,0,0.6);
+        }
+
+        #quiz-overlay.active { transform: translateY(0); }
+
+        #question {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 25px;
+            color: white;
+            line-height: 1.4;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #ddd;
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            text-align: left;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn span {
+            background: var(--primary);
+            color: black;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 6px;
+            margin-right: 15px;
+            font-weight: 900;
+            font-size: 14px;
+        }
+
+        .option-btn:hover {
+            background: rgba(0, 255, 65, 0.08);
+            border-color: var(--primary);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        #timer-bar-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 20px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            transition: width linear;
+        }
+
+        .result-msg {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.2);
+            font-size: 4rem;
+            font-weight: 950;
+            text-transform: uppercase;
+            z-index: 150;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            -webkit-text-stroke: 2px black;
+        }
+
+        .result-msg.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .correct { color: var(--primary); text-shadow: 0 0 30px var(--primary); }
+        .wrong { color: var(--danger); text-shadow: 0 0 30px var(--danger); }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="hud">
+            <div id="stats">
+                <span>Distance: <span id="dist-val">0</span>m</span>
+                <span>Speed: <span id="speed-val">0</span> km/h</span>
+            </div>
+            <div class="distance-bar">
+                <div id="police-dist"></div>
+            </div>
+        </div>
+
+        <div id="start-screen" class="overlay">
+            <h1>HELMET HERO</h1>
+            <h2>QUIZ RUSH</h2>
+            <p>La polizia ti tallona! Rispondi correttamente ai quiz per accelerare e raggiungere il traguardo prima che ti prendano.</p>
+            <button class="btn" id="start-btn">Inizia la fuga</button>
+        </div>
+
+        <div id="end-screen" class="overlay hidden">
+            <h1 id="end-title">VITTORIA!</h1>
+            <p id="end-msg">Hai seminato le volanti con la tua agilità mentale.</p>
+            <div style="font-size: 2rem; font-weight: 900; margin-bottom: 35px; font-family: monospace">
+                SCORE: <span id="final-score" style="color: var(--primary)">0</span>
+            </div>
+            <button class="btn" id="restart-btn">Riprova</button>
+        </div>
+
+        <div id="quiz-overlay">
+            <div id="question">Caricamento...</div>
+            <div class="options">
+                <button class="option-btn" data-index="0"><span>1</span> <div class="opt-text">Opzione 1</div></button>
+                <button class="option-btn" data-index="1"><span>2</span> <div class="opt-text">Opzione 2</div></button>
+                <button class="option-btn" data-index="2"><span>3</span> <div class="opt-text">Opzione 3</div></button>
+                <button class="option-btn" data-index="3"><span>4</span> <div class="opt-text">Opzione 4</div></button>
+            </div>
+            <div id="timer-bar-container">
+                <div id="timer-bar"></div>
+            </div>
+        </div>
+
+        <div id="feedback" class="result-msg">PERFETTO!</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const hudDist = document.getElementById('dist-val');
+        const hudSpeed = document.getElementById('speed-val');
+        const hudPolice = document.getElementById('police-dist');
+        const quizOverlay = document.getElementById('quiz-overlay');
+        const timerBar = document.getElementById('timer-bar');
+        const feedback = document.getElementById('feedback');
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', () => location.reload());
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.getAttribute('data-index'));
+                checkAnswer(idx);
+            });
+        });
+
+        const config = {
+            targetDistance: 15000,
+            initialPoliceDist: 120, // Very close
+            maxPoliceDist: 1000,
+            baseSpeed: 6.6,
+            targetBaseSpeed: 6.6,
+            policeBaseSpeed: 6.58, // Almost same as player
+            policeAccelRate: 0.0004 // Even more aggressive
+        };
+
+        let game = {
+            running: false,
+            distance: 0,
+            speed: config.baseSpeed,
+            targetSpeed: config.baseSpeed,
+            policeDist: config.initialPoliceDist,
+            policeSpeed: config.policeBaseSpeed,
+            score: 0,
+            roadOffset: 0,
+            quizActive: false,
+            currentQuestion: null,
+            quizTimer: 0,
+            quizDuration: 6000,
+            lastTime: 0,
+            nextQuizTime: 1200,
+            frameCount: 0
+        };
+
+        const questions = [
+            { q: "Qual è il limite di velocità standard in autostrada?", a: ["110 km/h", "130 km/h", "150 km/h", "100 km/h"], c: 1 },
+            { q: "Cosa indica il cartello ottagonale rosso?", a: ["Precedenza", "Pericolo", "Stop", "Divieto"], c: 2 },
+            { q: "In quale anno è stato fondato il marchio Ducati?", a: ["1926", "1946", "1952", "1910"], c: 0 },
+            { q: "Quanti cilindri ha solitamente un motore 'Boxer' BMW?", a: ["1", "4", "2", "6"], c: 2 },
+            { q: "Cosa significa l'acronimo ABS?", a: ["Auto Brake System", "Anti-lock Braking System", "Active Bike Safety", "All Brake Sensors"], c: 1 },
+            { q: "Quale pilota ha vinto più titoli mondiali in MotoGP?", a: ["Valentino Rossi", "Giacomo Agostini", "Marc Marquez", "Mick Doohan"], c: 1 },
+            { q: "Il casco è obbligatorio per i ciclomotori?", a: ["Solo fuori città", "No", "Sì, sempre", "Solo per minorenni"], c: 2 },
+            { q: "Cosa indica la spia rossa con l'ampolla dell'olio?", a: ["Cambio olio", "Pressione olio bassa", "Olio freddo", "Troppo olio"], c: 1 },
+            { q: "Qual è la cilindrata minima per entrare in autostrada?", a: ["125cc", "150cc", "250cc", "50cc"], c: 1 },
+            { q: "Cosa si deve fare al segnale di giallo fisso al semaforo?", a: ["Accelerare", "Fermarsi se possibile", "Suonare il clacson", "Passare comunque"], c: 1 },
+            { q: "In che lato della strada si guida nel Regno Unito?", a: ["Destra", "Sinistra", "Al centro", "Entrambi"], c: 1 },
+            { q: "Quale di queste è una marca di caschi?", a: ["Pirelli", "Shoei", "Brembo", "Akrapovic"], c: 1 },
+            { q: "A cosa serve la frizione?", a: ["A frenare", "A staccare il motore dalle ruote", "A dare gas", "A piegare"], c: 1 },
+            // New Questions
+            { q: "Cos'è la 'zona rossa' sul contagiri?", a: ["Riserva carburante", "Regime massimo sicuro", "Temperatura alta", "Velocità eccessiva"], c: 1 },
+            { q: "Quale parte della gomma si consuma di più piegando?", a: ["Il centro", "La spalla", "Il battistrada", "La valvola"], c: 1 },
+            { q: "Qual è il significato di un semaforo a freccia verde?", a: ["Passaggio libero", "Svolta consentita", "Corsia preferenziale", "Stop"], c: 1 },
+            { q: "Cosa indica il cartello triangolare con la punta in su?", a: ["Stop", "Precedenza", "Pericolo", "Divieto"], c: 2 },
+            { q: "Cosa significa 'HANS' nel mondo delle corse?", a: ["High Speed", "Head and Neck Support", "Handling System", "Helmet Assist"], c: 1 },
+            { q: "Quale di questi NON è un marchio di moto italiano?", a: ["MV Agusta", "Aprilia", "Benelli", "Triumph"], c: 3 },
+            { q: "Cosa indica la scritta 'DOT' sugli pneumatici?", a: ["Marca", "Data di produzione", "Pressione", "Tipo di gomma"], c: 1 },
+            { q: "Il passeggero deve indossare il casco?", a: ["No", "Solo minorenni", "Sì, obbligatorio", "Solo in autostrada"], c: 2 },
+            { q: "Quale manopola aziona il freno anteriore?", a: ["Sinistra", "Destra", "Entrambe", "Nessuna"], c: 1 },
+            { q: "Cosa si aziona col piede sinistro su una moto?", a: ["Freno", "Frizione", "Cambio", "Acceleratore"], c: 2 },
+            { q: "Qual è la pressione media delle gomme di una moto?", a: ["1.0 bar", "2.2 - 2.9 bar", "5.0 bar", "0.5 bar"], c: 1 },
+            { q: "Cosa indica un cartello cerchiato di rosso?", a: ["Informazione", "Divieto", "Pericolo", "Obbligo"], c: 1 },
+            { q: "Cosa indica un cartello cerchiato di blu?", a: ["Divieto", "Obbligo", "Precedenza", "Pericolo"], c: 1 },
+            { q: "Quale di questi motori ha il miglior bilanciamento?", a: ["Monocilindrico", "Bicilindrico a V", "4 cilindri in linea", "3 cilindri"], c: 2 }
+        ];
+
+        function resize() {
+            canvas.width = 400;
+            canvas.height = 700;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            game.running = true;
+            game.lastTime = performance.now();
+            requestAnimationFrame(update);
+        }
+
+        function showQuiz() {
+            if (game.quizActive || !game.running) return;
+            game.quizActive = true;
+            game.currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+            document.getElementById('question').innerText = game.currentQuestion.q;
+            const buttons = document.querySelectorAll('.opt-text');
+            buttons.forEach((btn, i) => btn.innerText = game.currentQuestion.a[i]);
+            quizOverlay.classList.add('active');
+            game.quizTimer = game.quizDuration;
+            timerBar.style.transition = 'none';
+            timerBar.style.width = '100%';
+            setTimeout(() => {
+                timerBar.style.transition = `width ${game.quizDuration}ms linear`;
+                timerBar.style.width = '0%';
+            }, 50);
+            game.quizTimeout = setTimeout(() => { if (game.quizActive) checkAnswer(-1); }, game.quizDuration);
+        }
+
+        function checkAnswer(index) {
+            if (!game.quizActive) return;
+            clearTimeout(game.quizTimeout);
+            game.quizActive = false;
+            quizOverlay.classList.remove('active');
+            const isCorrect = index === game.currentQuestion.c;
+            
+            if (isCorrect) {
+                game.targetSpeed += 0.333; // +5 km/h
+                // Progressive gain: harder to gain distance at start
+                const gainMult = Math.min(1.5, 0.5 + (game.distance / 10000));
+                game.policeDist = Math.min(config.maxPoliceDist, game.policeDist + (80 * gainMult));
+                game.score += 100;
+                showFeedback("PERFETTO!", "correct");
+            } else {
+                game.targetSpeed = Math.max(4, game.targetSpeed - 0.4);
+                game.policeDist -= 250; // Heavy penalty
+                showFeedback("ERRORE!", "wrong");
+            }
+            game.nextQuizTime = game.distance + 1500;
+        }
+
+        function showFeedback(text, type) {
+            feedback.innerText = text;
+            feedback.className = `result-msg show ${type}`;
+            setTimeout(() => feedback.classList.remove('show'), 1200);
+        }
+
+        function update(time) {
+            if (!game.running) return;
+            const dt = (time - game.lastTime) / 16.67;
+            game.lastTime = time;
+            game.frameCount++;
+
+            game.speed += (game.targetSpeed - game.speed) * 0.05 * dt;
+            game.distance += game.speed * dt;
+            game.roadOffset = (game.roadOffset + game.speed * dt) % 80;
+            
+            // Police AI logic
+            game.policeSpeed += config.policeAccelRate * dt;
+            
+            // INTENSE RUBBER BANDING for first 50% of the race
+            const progress = game.distance / config.targetDistance;
+            let rubberBand = 0;
+            if (progress < 0.6) {
+                // If they are too far, bring them back aggressively
+                if (game.policeDist > 250) {
+                    rubberBand = (game.policeDist - 250) * 0.008;
+                }
+            } else {
+                // Second half: they start giving up
+                rubberBand = 0;
+            }
+
+            const relativePoliceSpeed = (game.policeSpeed + rubberBand) - game.speed;
+            game.policeDist -= relativePoliceSpeed * dt;
+
+            game.targetSpeed += 0.0006 * dt;
+            hudDist.innerText = Math.floor(game.distance);
+            hudSpeed.innerText = Math.floor(game.speed * 15);
+            const distPercent = (game.policeDist / config.maxPoliceDist) * 100;
+            hudPolice.style.width = `${Math.max(0, Math.min(100, distPercent))}%`;
+
+            if (game.distance > game.nextQuizTime && !game.quizActive && (config.targetDistance - game.distance) > 600) {
+                showQuiz();
+            }
+
+            if (game.policeDist <= 0) endGame(false);
+            if (game.distance >= config.targetDistance) endGame(true);
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#222';
+            ctx.fillRect(0, 0, 40, canvas.height);
+            ctx.fillRect(canvas.width - 40, 0, 40, canvas.height);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([40, 40]);
+            ctx.lineDashOffset = -game.roadOffset;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2, -80);
+            ctx.lineTo(canvas.width/2, canvas.height + 80);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            const remaining = config.targetDistance - game.distance;
+            if (remaining < 2000) {
+                const flagY = -remaining + (canvas.height - 180);
+                drawFinishLine(flagY);
+            }
+
+            const bikeY = canvas.height - 180;
+            const pDist = game.policeDist;
+            if (pDist < 800) {
+                drawPoliceCar(canvas.width/2 - 50, bikeY + pDist + 40, game.frameCount);
+                drawPoliceCar(canvas.width/2 + 50, bikeY + pDist - 10, game.frameCount);
+            }
+            drawBike(canvas.width/2, bikeY, '#00FF41');
+            drawMinimap();
+        }
+
+        function drawBike(x, y, color) {
+            const width = 24, height = 48;
+            ctx.save(); ctx.translate(x, y);
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath(); ctx.ellipse(3, 5, width / 2, height / 2, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#111';
+            ctx.fillRect(-3, -height / 2 - 4, 6, 12);
+            ctx.fillRect(-4, height / 2 - 8, 8, 14);
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.moveTo(0, -height / 2); ctx.quadraticCurveTo(width / 2, -height / 4, width / 2.5, 0); ctx.lineTo(width / 3, height / 4); ctx.lineTo(-width / 3, height / 4); ctx.lineTo(-width / 2.5, 0); ctx.quadraticCurveTo(-width / 2, -height / 4, 0, -height / 2); ctx.fill();
+            ctx.fillStyle = '#1a1a1a';
+            ctx.beginPath(); ctx.roundRect(-width / 3.5, 0, width / 1.75, height / 2.5, 3); ctx.fill();
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-width / 1.5, -height / 3); ctx.lineTo(0, -height / 4); ctx.lineTo(width / 1.5, -height / 3); ctx.stroke();
+            ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(0, -2, width / 2 - 2, 6, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(0, -5, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, -7, 5, Math.PI * 0.8, Math.PI * 0.2, true); ctx.fill();
+            ctx.restore();
+        }
+
+        function drawPoliceCar(x, y, frameCount) {
+            const width = 44, height = 80;
+            ctx.save(); ctx.translate(x, y);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(-width / 2 + 5, -height / 2 + 5, width, height);
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(-width / 2, -height / 2, width, height, 8); ctx.fill();
+            ctx.fillStyle = '#0044cc'; ctx.fillRect(-width / 2, -10, 5, 40); ctx.fillRect(width / 2 - 5, -10, 5, 40);
+            ctx.fillStyle = '#111'; ctx.fillRect(-width / 2 + 5, -height / 4, width - 10, height / 3); ctx.fillRect(-width / 2 + 6, height / 2 - 12, width - 12, 6);
+            ctx.fillStyle = '#0044cc'; ctx.font = 'bold 9px Arial'; ctx.textAlign = 'center'; ctx.fillText('POLICE', 0, 15);
+            const flash = Math.floor(Date.now() / 150) % 2 === 0;
+            ctx.fillStyle = flash ? '#ff0000' : '#0000ff'; ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle; ctx.fillRect(-15, -8, 15, 10);
+            ctx.fillStyle = flash ? '#0000ff' : '#ff0000'; ctx.shadowColor = ctx.fillStyle; ctx.fillRect(0, -8, 15, 10);
+            ctx.shadowBlur = 0; ctx.restore();
+        }
+
+        function drawFinishLine(y) {
+            ctx.fillStyle = 'white';
+            const size = 20;
+            for(let i=0; i<canvas.width; i+=size*2) {
+                for(let j=0; j<size*2; j+=size) {
+                    ctx.fillRect(i + (j%40 === 0 ? 0 : size), y+j, size, size);
+                }
+            }
+        }
+
+        function drawMinimap() {
+            const margin = 20, w = 35, h = 200, x = canvas.width - w - margin, y = 80;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 12); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.stroke();
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + w/2, y + 15); ctx.lineTo(x + w/2, y + h - 15); ctx.stroke();
+            ctx.fillStyle = 'white'; ctx.fillRect(x + 8, y + 15, w - 16, 5);
+            const progress = game.distance / config.targetDistance;
+            const playerY = (y + h - 20) - (progress * (h - 35));
+            ctx.shadowBlur = 15; ctx.shadowColor = '#00FF41'; ctx.fillStyle = '#00FF41'; ctx.beginPath(); ctx.arc(x + w/2, playerY, 5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+        }
+
+        function endGame(win) {
+            game.running = false;
+            quizOverlay.classList.remove('active');
+            clearTimeout(game.quizTimeout);
+            game.quizActive = false;
+            const screen = document.getElementById('end-screen');
+            screen.classList.remove('hidden');
+            document.getElementById('end-title').innerText = win ? "MISSION COMPLETED" : "BUSTED!";
+            document.getElementById('end-title').style.color = win ? "var(--primary)" : "var(--danger)";
+            document.getElementById('end-msg').innerText = win ? "Hai seminato la polizia con la tua intelligenza." : "Sei stato arrestato. Fine della corsa.";
+            document.getElementById('final-score').innerText = game.score + Math.floor(game.distance/10);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!game.quizActive) return;
+            if (e.key === '1') checkAnswer(0);
+            if (e.key === '2') checkAnswer(1);
+            if (e.key === '3') checkAnswer(2);
+            if (e.key === '4') checkAnswer(3);
+        });
+
+    </script>
+</body>
+</html>

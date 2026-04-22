@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Gamepad2, Trophy, Play, Sparkles, BrainCircuit, Zap, Activity, LucideIcon } from "lucide-react";
+import { Gamepad2, Trophy, Play, Sparkles, BrainCircuit, Zap, Activity, LucideIcon, ShieldAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NeonRider } from "./games/NeonRider";
 import { MotoQuiz } from "./games/MotoQuiz";
 import { TrafficDodge2D } from "./games/TrafficDodge2D";
 import { RatingSystem } from "@/components/ui/RatingSystem";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
+import { GameRelease } from "@shared/schema";
+import { GameReleaseAdmin } from "@/components/games/GameReleaseAdmin";
 
 interface GameData {
   id: string;
@@ -20,10 +23,24 @@ interface GameData {
 
 export function Games() {
   const { t } = useTranslation();
+  const { data: user } = useAuth();
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  const AVAILABLE_GAMES: GameData[] = [
+  const { data: upcomingReleases } = useQuery<GameRelease[]>({
+    queryKey: ["/api/game-releases"],
+  });
+
+  const AVAILABLE_GAMES: GameData[] = [    {
+      id: 'helmet-hero',
+      titleKey: 'games.helmetHero.title',
+      descKey: 'games.helmetHero.desc',
+      icon: ShieldAlert,
+      category: 'Arcade',
+      color: 'primary',
+      isAvailable: true,
+      type: 'Quiz Rush'
+    },
     {
       id: 'traffic-dodge',
       titleKey: 'games.trafficDodge.title',
@@ -34,16 +51,7 @@ export function Games() {
       isAvailable: true,
       type: 'Racing'
     },
-    {
-      id: 'neon-rider',
-      titleKey: 'games.neonRider.title',
-      descKey: 'games.neonRider.desc',
-      icon: Zap,
-      category: 'Arcade',
-      color: 'primary',
-      isAvailable: true,
-      type: 'Racing'
-    },
+
     {
       id: 'moto-quiz',
       titleKey: 'games.motoQuiz.title',
@@ -56,14 +64,30 @@ export function Games() {
     }
   ];
 
-  const UPCOMING_GAMES: any[] = [];
-
   const filteredGames = activeCategory
     ? AVAILABLE_GAMES.filter(g => g.category === activeCategory)
     : AVAILABLE_GAMES;
 
-  if (activeGame === 'neon-rider') {
-    return <NeonRider onBack={() => setActiveGame(null)} />;
+
+  if (activeGame === 'helmet-hero') {
+    return (
+      <div className="fixed inset-0 z-50 bg-black flex flex-col">
+        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-zinc-900">
+          <h2 className="font-black uppercase tracking-widest text-primary">Helmet Hero: Quiz Rush</h2>
+          <button 
+            onClick={() => setActiveGame(null)}
+            className="px-4 py-2 bg-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-500 transition-colors"
+          >
+            Esci dal Gioco
+          </button>
+        </div>
+        <iframe 
+          src="/games/helmet-hero.html" 
+          className="flex-1 w-full border-none"
+          title="Helmet Hero Quiz Rush"
+        />
+      </div>
+    );
   }
 
   if (activeGame === 'moto-quiz') {
@@ -130,7 +154,7 @@ export function Games() {
                       className="w-full md:w-auto min-w-[180px] flex items-center justify-center gap-3 px-8 py-5 bg-primary text-black font-black uppercase tracking-widest rounded-[1.25rem] hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(var(--primary),0.2)] group-hover:shadow-[0_0_40px_rgba(var(--primary),0.4)]"
                     >
                       <Play className="w-5 h-5 fill-current" />
-                      {t('games.neonRider.playNow')}
+                      {t('games.playNow')}
                     </button>
                     <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground opacity-40">
                       Category: {game.type}
@@ -156,9 +180,9 @@ export function Games() {
         {/* Categories / Side Info */}
         <div className="lg:col-span-4 space-y-6">
           <div className="p-8 rounded-[2rem] border border-white/10 bg-card/50 backdrop-blur-sm">
-            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-6 opacity-60">Game Categories</h3>
+            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-6 opacity-60">{t('games.categoriesTitle', { defaultValue: 'Game Categories' })}</h3>
             <div className="flex flex-wrap gap-2">
-              {['Arcade', 'Racing', 'Motorcycle', 'Retro', 'Neon', 'Trivia'].map(cat => {
+              {['Arcade', 'Racing', 'Motorcycle', 'Retro', 'Trivia'].map(cat => {
                 const isActive = activeCategory === cat;
                 return (
                   <button
@@ -180,30 +204,33 @@ export function Games() {
 
           <div className="p-8 rounded-[2rem] border border-white/10 bg-card/50 backdrop-blur-sm overflow-hidden relative group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl -mr-16 -mt-16 group-hover:bg-primary/20 transition-all duration-700" />
-            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-6 opacity-60">Future Releases</h3>
+            <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-6 opacity-60">{t('games.futureReleases')}</h3>
             <div className="space-y-4">
-              {UPCOMING_GAMES.length > 0 ? UPCOMING_GAMES.map(item => (
+              {upcomingReleases && upcomingReleases.length > 0 ? upcomingReleases.map(item => (
                 <div
-                  key={item.title}
-                  className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-black/40 border border-white/5 opacity-60"
+                  key={item.id}
+                  className="flex items-start justify-between gap-3 p-4 rounded-2xl bg-black/40 border border-white/5 group/release hover:border-primary/20 transition-all"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-white/5 text-muted-foreground">
+                    <div className="p-3 rounded-xl bg-white/5 text-muted-foreground group-hover/release:text-primary transition-colors">
                       <Gamepad2 className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase tracking-tight">{item.title}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase opacity-60">{item.type}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase opacity-60 mb-1">{item.type}</p>
+                      <p className="text-[9px] text-muted-foreground/60 leading-tight line-clamp-2">{item.description}</p>
                     </div>
                   </div>
-                  <span className="text-[9px] font-mono uppercase italic text-primary/50">
+                  <span className="text-[9px] font-mono uppercase italic text-primary/50 whitespace-nowrap">
                     {item.progress}
                   </span>
                 </div>
               )) : (
-                <p className="text-xs text-muted-foreground italic">Nessun rilascio pianificato.</p>
+                <p className="text-xs text-muted-foreground italic">{t('games.noReleases', { defaultValue: 'Nessun rilascio pianificato.' })}</p>
               )}
             </div>
+
+            {user?.isAdmin && <GameReleaseAdmin />}
           </div>
         </div>
       </div>

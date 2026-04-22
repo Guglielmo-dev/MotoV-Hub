@@ -21,6 +21,7 @@ import {
   insertTravelLogSchema,
   insertCustomThemeSchema,
   insertNotificationSchema,
+  insertGameReleaseSchema,
   updateUsernameSchema,
   updateProfileSchema
 } from "@shared/schema";
@@ -1007,6 +1008,40 @@ Regole importanti:
       ...stats,
       userRating
     });
+  });
+
+  // ── Game Releases Routes ────────────────────────────────────────────────
+  app.get('/api/game-releases', async (req, res) => {
+    try {
+      const releases = await storage.getGameReleases();
+      res.json(releases);
+    } catch (err) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/game-releases', requireAdmin, async (req, res) => {
+    try {
+      const input = insertGameReleaseSchema.parse(req.body);
+      const release = await storage.createGameRelease(input);
+      res.status(201).json(release);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ message: err.issues[0].message });
+      } else {
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    }
+  });
+
+  app.delete('/api/game-releases/:id', requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      await storage.deleteGameRelease(id);
+      res.status(204).send();
+    } catch (err) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
   // ── Notification Routes ──────────────────────────────────────────────────

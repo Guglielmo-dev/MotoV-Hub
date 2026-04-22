@@ -139,6 +139,15 @@ export const gameScores = pgTable("game_scores", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const gameReleases = pgTable("game_releases", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull().default('Game'), // 'Game', 'Expansion', etc
+  progress: text("progress").notNull().default('Planned'), // 'Coming Soon', 'In Development', etc
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   motorcycles: many(motorcycles),
   communityPosts: many(communityPosts),
@@ -243,6 +252,7 @@ export const insertRatingSchema = createInsertSchema(ratings)
   });
 
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+export const insertGameReleaseSchema = createInsertSchema(gameReleases).omit({ id: true, createdAt: true });
 export const insertGameScoreSchema = createInsertSchema(gameScores).omit({ id: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
@@ -276,6 +286,9 @@ export type InsertRating = z.infer<typeof insertRatingSchema>;
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+export type GameRelease = typeof gameReleases.$inferSelect;
+export type InsertGameRelease = z.infer<typeof insertGameReleaseSchema>;
 
 export type GameScore = typeof gameScores.$inferSelect;
 export type InsertGameScore = z.infer<typeof insertGameScoreSchema>;

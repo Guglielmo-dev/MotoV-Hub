@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, X, Loader2, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -167,8 +168,8 @@ export function ChatBot() {
               <div className="space-y-4">
                 {/* Welcome Message */}
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
-                    <HelmetIcon className="w-4 h-4 text-primary" />
+                  <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 overflow-hidden">
+                    <img src="/logo.png" className="w-full h-full object-cover" alt="VaultBot" />
                   </div>
                   <div className="bg-secondary/50 rounded-2xl rounded-tl-none p-3 text-sm text-foreground/90 max-w-[85%] border border-white/5">
                     {t('notifications.chat.welcome')}
@@ -182,7 +183,7 @@ export function ChatBot() {
                       "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
                       msg.role === 'user' ? "bg-zinc-800 border border-white/10" : "bg-primary/20 border border-primary/30"
                     )}>
-                      {msg.role === 'user' ? <User className="w-4 h-4 text-zinc-400" /> : <HelmetIcon className="w-4 h-4 text-primary" />}
+                      {msg.role === 'user' ? <User className="w-4 h-4 text-zinc-400" /> : <img src="/logo.png" className="w-4 h-4 object-contain" alt="VaultBot" />}
                     </div>
                     <div className={cn(
                       "rounded-2xl p-3 text-sm max-w-[85%] border border-white/5",
@@ -190,7 +191,13 @@ export function ChatBot() {
                         ? "bg-primary text-black font-medium rounded-tr-none"
                         : "bg-secondary/50 text-foreground/90 rounded-tl-none"
                     )}>
-                      {msg.content}
+                      {msg.role === 'model' ? (
+                        <div className="markdown-content prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-p:my-1 prose-headings:my-2 prose-ul:my-2 prose-li:my-0">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                   </div>
                 ))}

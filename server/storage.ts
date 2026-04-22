@@ -1,6 +1,6 @@
 import {
   users, motorcycles, maintenance, modifications,
-  communityPosts, communityComments, communityLikes, travelLogs, customThemes, ratings, notifications, gameScores,
+  communityPosts, communityComments, communityLikes, travelLogs, customThemes, ratings, notifications, gameReleases, gameScores,
   type User, type InsertUser,
   type Motorcycle, type InsertMotorcycle,
   type Maintenance, type InsertMaintenance,
@@ -11,6 +11,7 @@ import {
   type CustomTheme, type InsertCustomTheme,
   type Rating, type InsertRating,
   type Notification, type InsertNotification,
+  type GameRelease, type InsertGameRelease,
   type GameScore, type InsertGameScore,
 } from "@shared/schema";
 import { db } from "./db";
@@ -83,6 +84,11 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   deleteNotification(id: number): Promise<void>;
   updateUserLastRead(userId: number): Promise<void>;
+
+  // Game Releases
+  getGameReleases(): Promise<GameRelease[]>;
+  createGameRelease(release: InsertGameRelease): Promise<GameRelease>;
+  deleteGameRelease(id: number): Promise<void>;
 
   // Game Scores
   getGameScores(gameId: string, userId?: number): Promise<{ personalBest: number; globalBest: number }>;
@@ -366,6 +372,19 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ lastReadNotificationsAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  async getGameReleases(): Promise<GameRelease[]> {
+    return db.select().from(gameReleases).orderBy(desc(gameReleases.createdAt));
+  }
+
+  async createGameRelease(data: InsertGameRelease): Promise<GameRelease> {
+    const [inserted] = await db.insert(gameReleases).values(data).returning();
+    return inserted;
+  }
+
+  async deleteGameRelease(id: number): Promise<void> {
+    await db.delete(gameReleases).where(eq(gameReleases.id, id));
   }
 
   async getGameScores(gameId: string, userId?: number): Promise<{ personalBest: number; globalBest: number }> {
