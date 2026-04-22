@@ -459,7 +459,17 @@ Regole importanti:
   });
 
   app.delete(api.maintenance.delete.path, requireAuth, async (req, res) => {
-    await storage.deleteMaintenanceEvent(Number(req.params.id));
+    const userId = (req.session as any).userId;
+    const id = Number(req.params.id);
+    const event = await storage.getMaintenanceEvent(id);
+    if (!event) {
+      return res.status(404).json({ message: "Maintenance event not found" });
+    }
+    const motorcycle = await storage.getMotorcycle(event.motorcycleId);
+    if (!motorcycle || motorcycle.userId !== userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    await storage.deleteMaintenanceEvent(id);
     res.status(204).send();
   });
 
@@ -503,7 +513,17 @@ Regole importanti:
   });
 
   app.delete(api.modifications.delete.path, requireAuth, async (req, res) => {
-    await storage.deleteModification(Number(req.params.id));
+    const userId = (req.session as any).userId;
+    const id = Number(req.params.id);
+    const mod = await storage.getModification(id);
+    if (!mod) {
+      return res.status(404).json({ message: "Modification not found" });
+    }
+    const motorcycle = await storage.getMotorcycle(mod.motorcycleId);
+    if (!motorcycle || motorcycle.userId !== userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    await storage.deleteModification(id);
     res.status(204).send();
   });
 

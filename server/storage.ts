@@ -42,10 +42,12 @@ export interface IStorage {
   deleteMotorcycle(id: number): Promise<void>;
 
   getMaintenanceEvents(motorcycleId: number): Promise<Maintenance[]>;
+  getMaintenanceEvent(id: number): Promise<Maintenance | undefined>;
   createMaintenanceEvent(motorcycleId: number, m: InsertMaintenance): Promise<Maintenance>;
   deleteMaintenanceEvent(id: number): Promise<void>;
 
   getModifications(motorcycleId: number): Promise<Modification[]>;
+  getModification(id: number): Promise<Modification | undefined>;
   createModification(motorcycleId: number, mod: InsertModification): Promise<Modification>;
   deleteModification(id: number): Promise<void>;
 
@@ -147,6 +149,11 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(maintenance).where(eq(maintenance.motorcycleId, motorcycleId));
   }
 
+  async getMaintenanceEvent(id: number): Promise<Maintenance | undefined> {
+    const [m] = await db.select().from(maintenance).where(eq(maintenance.id, id));
+    return m || undefined;
+  }
+
   async createMaintenanceEvent(motorcycleId: number, m: InsertMaintenance): Promise<Maintenance> {
     const [inserted] = await db.insert(maintenance).values({ ...m, motorcycleId }).returning();
     return inserted;
@@ -158,6 +165,11 @@ export class DatabaseStorage implements IStorage {
 
   async getModifications(motorcycleId: number): Promise<Modification[]> {
     return db.select().from(modifications).where(eq(modifications.motorcycleId, motorcycleId));
+  }
+
+  async getModification(id: number): Promise<Modification | undefined> {
+    const [m] = await db.select().from(modifications).where(eq(modifications.id, id));
+    return m || undefined;
   }
 
   async createModification(motorcycleId: number, mod: InsertModification): Promise<Modification> {

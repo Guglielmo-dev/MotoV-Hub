@@ -12,8 +12,6 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@hookform/resolvers": "^5.2.2",
-    "@jridgewell/trace-mapping": "^0.3.31",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -64,12 +62,9 @@
     "i18next-browser-languagedetector": "^8.2.1",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.8.0",
-    "memorystore": "^1.6.7",
     "multer": "^2.1.1",
-    "next-themes": "^0.4.6",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "passport-local": "^1.0.0",
     "pg": "^8.20.0",
     "react": "^19.2.5",
     "react-colorful": "^5.6.1",
@@ -89,9 +84,7 @@
     "use-debounce": "^10.1.1",
     "vaul": "^1.1.2",
     "wouter": "^3.9.0",
-    "ws": "^8.20.0",
-    "zod": "^4.3.6",
-    "zod-validation-error": "^5.0.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
@@ -102,10 +95,8 @@
     "@types/express-session": "^1.19.0",
     "@types/node": "25.6.0",
     "@types/passport": "^1.0.17",
-    "@types/passport-local": "^1.0.38",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
     "cross-env": "^10.1.0",
