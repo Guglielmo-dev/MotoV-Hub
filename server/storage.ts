@@ -86,6 +86,9 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   deleteNotification(id: number): Promise<void>;
   updateUserLastRead(userId: number): Promise<void>;
+  markNotificationAsRead(userId: number, notificationId: number): Promise<void>;
+  dismissNotification(userId: number, notificationId: number): Promise<void>;
+  markAllNotificationsAsRead(userId: number): Promise<void>;
 
   // Game Releases
   getGameReleases(): Promise<GameRelease[]>;
@@ -383,6 +386,33 @@ export class DatabaseStorage implements IStorage {
   async updateUserLastRead(userId: number): Promise<void> {
     await db.update(users)
       .set({ lastReadNotificationsAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+  
+  async markNotificationAsRead(userId: number, notificationId: number): Promise<void> {
+    await db.update(users)
+      .set({ 
+        readNotificationIds: sql`array_append(COALESCE(${users.readNotificationIds}, ARRAY[]::integer[]), ${notificationId})`
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async dismissNotification(userId: number, notificationId: number): Promise<void> {
+    await db.update(users)
+      .set({ 
+        dismissedNotificationIds: sql`array_append(COALESCE(${users.dismissedNotificationIds}, ARRAY[]::integer[]), ${notificationId})`
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<void> {
+    const allNotifications = await this.getNotifications();
+    const allIds = allNotifications.map(n => n.id);
+    await db.update(users)
+      .set({ 
+        readNotificationIds: allIds,
+        lastReadNotificationsAt: new Date()
+      })
       .where(eq(users.id, userId));
   }
 

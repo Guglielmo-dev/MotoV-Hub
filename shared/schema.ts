@@ -26,6 +26,8 @@ export const users = pgTable("users", {
   activeCustomColor: text("active_custom_color"), // If set, activeBrandId should be treated as null
   isAdmin: boolean("is_admin").default(false),
   lastReadNotificationsAt: timestamp("last_read_notifications_at"),
+  readNotificationIds: integer("read_notification_ids").array().default([]),
+  dismissedNotificationIds: integer("dismissed_notification_ids").array().default([]),
 });
 
 export const motorcycles = pgTable("motorcycles", {

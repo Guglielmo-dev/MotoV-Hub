@@ -401,6 +401,16 @@ export const it = {
       warning: 'Attenzione',
       game: 'Nuovo Gioco'
     },
+    tabs: {
+      unread: 'Da Leggere',
+      read: 'Archivio',
+    },
+    actions: {
+      markAsRead: 'Segna come letta',
+      dismiss: 'Rimuovi',
+      dismissToast: 'Notifica rimossa',
+      markAllRead: 'Leggi tutto',
+    },
     chat: {
       title: 'VaultBot - Assistente IA',
       welcome: 'Ehi! Sono VaultBot. 🏍️ Come posso aiutarti oggi? Posso darti consigli tecnici, suggerire itinerari o rispondere a curiosità sulle moto.',

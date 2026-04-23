@@ -1094,9 +1094,23 @@ Regole importanti:
     }
   });
 
-  app.post('/api/notifications/read', requireAuth, async (req, res) => {
+  app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
     const userId = (req.session as any).userId;
-    await storage.updateUserLastRead(userId);
+    const notificationId = Number(req.params.id);
+    await storage.markNotificationAsRead(userId, notificationId);
+    res.status(200).json({ success: true });
+  });
+
+  app.post('/api/notifications/:id/dismiss', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    const notificationId = Number(req.params.id);
+    await storage.dismissNotification(userId, notificationId);
+    res.status(200).json({ success: true });
+  });
+
+  app.post('/api/notifications/read-all', requireAuth, async (req, res) => {
+    const userId = (req.session as any).userId;
+    await storage.markAllNotificationsAsRead(userId);
     res.status(200).json({ success: true });
   });
 

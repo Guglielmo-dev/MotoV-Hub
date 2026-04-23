@@ -401,6 +401,16 @@ export const en = {
       warning: 'Warning',
       game: 'New Game'
     },
+    tabs: {
+      unread: 'Inbox',
+      read: 'Archive',
+    },
+    actions: {
+      markAsRead: 'Mark as read',
+      dismiss: 'Dismiss',
+      dismissToast: 'Notification dismissed',
+      markAllRead: 'Mark all as read',
+    },
     chat: {
       title: 'VaultBot - AI Assistant',
       welcome: 'Hey there! I\'m VaultBot. 🏍️ How can I help you today? I can give technical tips, suggest routes, or answer curiosity about motorbikes.',
