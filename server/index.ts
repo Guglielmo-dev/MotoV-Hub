@@ -15,7 +15,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://*.supabase.co", "https://images.unsplash.com", "https://www.transparenttextures.com"],
-      connectSrc: ["'self'", "https://mainnet.infura.io", "https://*.supabase.co"],
+      connectSrc: ["'self'", "https://mainnet.infura.io", "https://*.supabase.co", "https://api.stripe.com"],
       frameSrc: ["'self'"], // Allow iframes for games
     }
   }

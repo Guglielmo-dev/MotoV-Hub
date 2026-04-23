@@ -27,6 +27,8 @@ import {
 } from "@shared/schema";
 import { subMonths, format, parse, isValid, startOfMonth } from 'date-fns';
 import { generateChatResponse } from "./ai";
+import { stripe, createCheckoutSession } from "./stripe";
+import Stripe from "stripe";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -338,7 +340,22 @@ Regole importanti:
       };
 
       const userId = (req.session as any).userId;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+      const scansUsed = user.aiScansUsed || 0;
+      const scansAvailable = user.aiScansCount || 0;
+
+      if (scansUsed >= scansAvailable) {
+        return res.status(402).json({ 
+          message: "no_credits_left",
+          scansUsed,
+          scansAvailable
+        });
+      }
+
       const motorcycle = await storage.createMotorcycle(userId, motorcycleData as any);
+      await storage.useAiScan(userId);
       return res.status(201).json(motorcycle);
     } catch (err: any) {
       console.error("[ScanLibretto] Error:", err.stack || err.message || err);
@@ -1171,6 +1188,54 @@ Regole importanti:
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
+  });
+
+  // ── Stripe Routes ────────────────────────────────────────────────────────
+  app.post("/api/stripe/create-checkout-session", requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const user = await storage.getUser(userId);
+      if (!user || !user.email) return res.status(400).json({ message: "Devi avere un'email associata per acquistare crediti" });
+
+      const session = await createCheckoutSession(userId, user.email);
+      res.json({ url: session.url });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/stripe/webhook", async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!sig || !webhookSecret) {
+      return res.status(400).send('Webhook Error: Missing signature or secret');
+    }
+
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        (req as any).rawBody,
+        sig,
+        webhookSecret
+      );
+    } catch (err: any) {
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = Number(session.metadata?.userId);
+      const type = session.metadata?.type;
+
+      if (userId && type === 'ai_scan_credit') {
+        await storage.incrementAiScansCount(userId, 1);
+        console.log(`[Stripe] Added credit to user ${userId}`);
+      }
+    }
+
+    res.json({ received: true });
   });
 
   return httpServer;

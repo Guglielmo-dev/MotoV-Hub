@@ -28,6 +28,8 @@ export const users = pgTable("users", {
   lastReadNotificationsAt: timestamp("last_read_notifications_at"),
   readNotificationIds: integer("read_notification_ids").array().default([]),
   dismissedNotificationIds: integer("dismissed_notification_ids").array().default([]),
+  aiScansCount: integer("ai_scans_count").default(1), // Default 1 free scan
+  aiScansUsed: integer("ai_scans_used").default(0),
 });
 
 export const motorcycles = pgTable("motorcycles", {
@@ -206,8 +208,8 @@ export const gameScoresRelations = relations(gameScores, ({ one }) => ({
   user: one(users, { fields: [gameScores.userId], references: [users.id] }),
 }));
 
-export const insertUserSchema = createInsertSchema(users).pick({ 
-  username: true, 
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
   password: true,
   email: true,
   googleId: true,

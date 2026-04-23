@@ -89,6 +89,10 @@ export interface IStorage {
   markNotificationAsRead(userId: number, notificationId: number): Promise<void>;
   dismissNotification(userId: number, notificationId: number): Promise<void>;
   markAllNotificationsAsRead(userId: number): Promise<void>;
+  
+  // AI Scan Credit Management
+  incrementAiScansCount(userId: number, amount: number): Promise<void>;
+  useAiScan(userId: number): Promise<void>;
 
   // Game Releases
   getGameReleases(): Promise<GameRelease[]>;
@@ -406,13 +410,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markAllNotificationsAsRead(userId: number): Promise<void> {
-    const allNotifications = await this.getNotifications();
-    const allIds = allNotifications.map(n => n.id);
+    const notifications = await this.getNotifications();
+    const notificationIds = notifications.map(n => n.id);
     await db.update(users)
-      .set({ 
-        readNotificationIds: allIds,
-        lastReadNotificationsAt: new Date()
-      })
+      .set({ readNotificationIds: notificationIds })
+      .where(eq(users.id, userId));
+  }
+
+  async incrementAiScansCount(userId: number, amount: number): Promise<void> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) throw new Error("User not found");
+    
+    await db.update(users)
+      .set({ aiScansCount: (user.aiScansCount || 0) + amount })
+      .where(eq(users.id, userId));
+  }
+
+  async useAiScan(userId: number): Promise<void> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) throw new Error("User not found");
+    
+    await db.update(users)
+      .set({ aiScansUsed: (user.aiScansUsed || 0) + 1 })
       .where(eq(users.id, userId));
   }
 

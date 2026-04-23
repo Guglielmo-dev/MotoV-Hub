@@ -39,10 +39,11 @@ export function MotorcycleDetails() {
   if (bikeLoading) return <div className="animate-pulse h-96 bg-card rounded-3xl" />;
   if (!bike) return <div className="text-destructive font-bold text-center py-20">{t('motorcycleDetails.motorcycleNotFound')}</div>;
 
+/*
   const handleLinkNFT = (address: string) => {
     updateBike({ id, nftContractAddress: address, nftTokenId: "1" });
   };
-
+*/
   const handleDeleteBike = () => {
     deleteBike(id, { onSuccess: () => setLocation('/garage') });
   };
@@ -110,7 +111,7 @@ export function MotorcycleDetails() {
             </div>
             
             <div className="flex gap-2">
-              <NFTSection nftContractAddress={bike.nftContractAddress} onConnect={handleLinkNFT} />
+              {/* <NFTSection nftContractAddress={bike.nftContractAddress} onConnect={handleLinkNFT} /> */}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button className="p-3 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white rounded-xl transition-all">

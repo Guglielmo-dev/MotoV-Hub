@@ -10,6 +10,9 @@ import { FileSearch, Loader2, UploadCloud, X, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useScanAndSaveLibretto } from '@/hooks/use-scan-libretto';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { CreditCard, Coins } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface LibrettoScannerProps {
   open: boolean;
@@ -22,6 +25,7 @@ type ScannerState = 'upload' | 'preview' | 'loading';
 export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScannerProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const { data: user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [state, setState] = useState<ScannerState>('upload');
@@ -30,6 +34,12 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScann
   const [isDragging, setIsDragging] = useState(false);
 
   const scanMutation = useScanAndSaveLibretto();
+  const [isBuying, setIsBuying] = useState(false);
+
+  const scansUsed = user?.aiScansUsed || 0;
+  const scansAvailable = user?.aiScansCount || 0;
+  const creditsLeft = Math.max(0, scansAvailable - scansUsed);
+  const hasCredits = creditsLeft > 0;
 
   const handleReset = useCallback(() => {
     setState('upload');
@@ -133,6 +143,27 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScann
     });
   };
 
+  const handleBuyCredit = async () => {
+    try {
+      setIsBuying(true);
+      const res = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to create session");
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (err) {
+      toast({
+        title: "Errore Stripe",
+        description: "Impossibile avviare il pagamento.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsBuying(false);
+    }
+  };
+
   const canClose = state !== 'loading';
 
   return (
@@ -159,6 +190,18 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScann
               <X className="w-5 h-5" />
             </button>
           )}
+        </div>
+
+        <div className="px-6 mb-4 flex items-center justify-between bg-zinc-900/30 py-2 rounded-lg mx-6 border border-white/5">
+          <div className="flex items-center gap-2">
+            <Coins className="w-4 h-4 text-primary" />
+            <span className="text-[10px] font-bold uppercase tracking-tighter text-zinc-400">
+              {i18n.language === 'it' ? 'Crediti IA:' : 'AI Credits:'}
+            </span>
+          </div>
+          <span className={cn("text-xs font-black font-mono", creditsLeft > 0 ? "text-primary" : "text-destructive")}>
+            {creditsLeft} / {scansAvailable}
+          </span>
         </div>
 
         <div className="p-6 pt-0">
@@ -189,6 +232,7 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScann
                   accept="image/*,application/pdf"
                   capture="environment"
                   className="hidden"
+                  disabled={!hasCredits}
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       handleFileSelect(e.target.files[0]);
@@ -197,6 +241,34 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScann
                   }}
                 />
               </div>
+
+              {!hasCredits && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex flex-col gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-destructive/20 rounded-lg shrink-0">
+                      <CreditCard className="w-5 h-5 text-destructive" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-destructive uppercase tracking-tight">
+                        {i18n.language === 'it' ? 'Crediti Esauriti' : 'No Credits Left'}
+                      </h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                        {i18n.language === 'it' 
+                          ? 'Hai terminato la tua prova gratuita. Acquista un nuovo credito per aggiungere una moto istantaneamente.' 
+                          : 'You have used your free scan. Buy a new credit to add a bike instantly.'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={handleBuyCredit}
+                    disabled={isBuying}
+                    className="w-full bg-destructive hover:bg-destructive/90 text-white font-bold h-10 rounded-lg text-xs uppercase tracking-widest"
+                  >
+                    {isBuying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Coins className="w-4 h-4 mr-2" />}
+                    {i18n.language === 'it' ? 'Acquista 1 Credito — 1.00€' : 'Buy 1 Credit — 1.00€'}
+                  </Button>
+                </div>
+              )}
 
               <div className="bg-zinc-900/50 rounded-lg p-4 space-y-2">
                 <p className="text-sm text-zinc-300 flex items-start gap-2">

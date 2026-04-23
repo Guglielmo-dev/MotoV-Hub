@@ -22,12 +22,14 @@ export function SpecsTab({ bike }: SpecsTabProps) {
         <div><dt className="text-sm text-muted-foreground mb-1">{t('motorcycleDetails.addedToGarage')}</dt><dd className="font-medium text-lg">{bike.createdAt ? format(new Date(bike.createdAt), 'MMMM yyyy', { locale: i18n.language === 'it' ? it : enUS }) : t('motorcycleDetails.unknown')}</dd></div>
       </dl>
 
+{/* 
       {bike.nftContractAddress && (
         <div className="mt-8 p-6 bg-secondary/50 rounded-xl border border-primary/20">
           <h4 className="flex items-center gap-2 font-bold text-primary mb-2"><ShieldAlert className="w-5 h-5"/> {t('motorcycleDetails.nftVerified')}</h4>
           <p className="text-sm text-muted-foreground font-mono break-all">{t('motorcycleDetails.contractAddress')}: {bike.nftContractAddress}</p>
         </div>
-      )}
+      )} 
+*/}
     </div>
   );
 }
