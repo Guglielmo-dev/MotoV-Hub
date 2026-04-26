@@ -25,6 +25,7 @@ const getInitials = (name: string) => {
 export function AppLayout({ children }: AppLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_KEY) === 'true');
+  const [showTrustpilot, setShowTrustpilot] = useState(true);
   const [location] = useLocation();
   const { data: user } = useAuth();
   const { t } = useTranslation();
@@ -36,7 +37,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   };
 
   const closeMenu = () => setMobileOpen(false);
-  
+
   const mobileLinks = [
     { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
     { href: '/garage', label: t('nav.garage'), icon: Bike },
@@ -71,10 +72,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           {user && (
             <div className="flex items-center gap-4 pt-4 pb-6 border-b border-white/5 mb-6 px-2">
               <Avatar className="w-10 h-10 border border-primary/20">
-                <AvatarImage 
-                  key={user.avatarUrl} 
-                  src={user.avatarUrl || undefined} 
-                  className="object-cover" 
+                <AvatarImage
+                  key={user.avatarUrl}
+                  src={user.avatarUrl || undefined}
+                  className="object-cover"
                 />
                 <AvatarFallback className="bg-primary/20 text-primary font-bold text-base uppercase">
                   {getInitials(user.username)}
@@ -113,25 +114,83 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Desktop Header / Top Bar */}
         <div className="hidden md:flex items-center justify-end px-8 py-4 border-b border-white/5 sticky top-0 bg-background/80 backdrop-blur-md z-30">
           <div className="flex items-center gap-4">
-             <div className="hidden lg:flex flex-col items-end mr-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-white leading-none mb-1">{user?.username}</span>
-                <span className="text-[8px] font-mono text-primary uppercase tracking-tighter">System Active</span>
-             </div>
-             <NotificationInbox />
+            <div className="hidden lg:flex flex-col items-end mr-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white leading-none mb-1">{user?.username}</span>
+              <span className="text-[8px] font-mono text-primary uppercase tracking-tighter">System Active</span>
+            </div>
+            <NotificationInbox />
           </div>
         </div>
 
-        <div className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
+        <div className="flex-1 p-4 sm:p-10 max-w-7xl mx-auto w-full pt-20 md:pt-8">
           {children}
         </div>
 
-        <footer className="border-t border-white/5 py-6 px-8 mt-12">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground font-mono">
-            <span className="text-primary/80 font-semibold tracking-wider uppercase">{t('common.developedBy')} KAWACODER</span>
-            <p className="text-center sm:text-right leading-relaxed">
-              {t('common.trademarks')}
-              <br />{t('common.independentProject')}
-            </p>
+        {/* Trustpilot Section */}
+        {showTrustpilot && (
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-10 mt-8 relative group">
+            <div className="bg-card/30 border border-white/5 rounded-2xl p-6 pr-12 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-primary/10 transition-all relative overflow-hidden">
+              <button
+                onClick={() => setShowTrustpilot(false)}
+                className="absolute top-2 right-2 p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-full transition-all z-10"
+                title={t('common.close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-1 text-center md:text-left relative z-0">
+                <h3 className="text-lg font-black font-display uppercase tracking-tight text-white italic">
+                  {t('common.reviewUs') || 'Ti piace MotoVault?'}
+                </h3>
+                <p className="text-[11px] text-muted-foreground font-medium max-w-xs leading-relaxed">
+                  {t('common.reviewUsDesc') || 'Aiutaci a crescere lasciando una recensione'}
+                </p>
+              </div>
+
+              {/* Trustpilot Mock Widget */}
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className="w-6 h-6 bg-[#00b67a] flex items-center justify-center rounded-sm">
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-white fill-current"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-white font-black tracking-tighter text-[10px] uppercase">Trustpilot</span>
+                  <span className="text-muted-foreground text-[8px] font-mono">Verified</span>
+                </div>
+              </div>
+
+              <button className="px-5 py-2.5 bg-[#00b67a] hover:bg-[#00b67a]/90 text-white font-black uppercase tracking-widest text-[10px] rounded-lg transition-all shadow-lg shadow-[#00b67a]/10 active:scale-95">
+                {t('common.writeReview') || 'Scrivi Recensione'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <footer className="border-t border-white/5 py-12 px-8 mt-12 bg-zinc-950/30">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-8 text-[10px] text-muted-foreground font-mono">
+            <div className="flex flex-col items-center sm:items-start gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center border border-primary/30 overflow-hidden">
+                  <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+                </div>
+                <span className="text-primary/80 font-black tracking-[0.2em] uppercase">MOTOVAULT</span>
+              </div>
+              <span className="opacity-50 font-black tracking-[0.1em] uppercase">{t('common.developedBy')} KAWACODER</span>
+              <a
+                href="mailto:kawacoder@gmail.com"
+                className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 group px-2 py-1 bg-white/5 rounded-md"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
+                kawacoder@gmail.com
+              </a>
+            </div>
+            <div className="text-center sm:text-right space-y-2 opacity-60 max-w-xs leading-relaxed">
+              <p>{t('common.trademarks')}</p>
+              <p>{t('common.independentProject')}</p>
+            </div>
           </div>
         </footer>
       </main>

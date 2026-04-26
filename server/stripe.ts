@@ -8,7 +8,24 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-01-27.acacia' as any, // Latest stable or specified
 });
 
-export const createCheckoutSession = async (userId: number, userEmail: string) => {
+import { StripeProductType } from '@shared/schema';
+
+export const createCheckoutSession = async (userId: number, userEmail: string, type: StripeProductType) => {
+  const products: Record<StripeProductType, { name: string, description: string, amount: number }> = {
+    ai_scan_credit: {
+      name: 'MotoVault AI Quick Add Credit',
+      description: '1 credit to scan a motorcycle registration document and add it instantly to your garage.',
+      amount: 100, // 1.00 EUR
+    },
+    motorcycle_slot: {
+      name: 'MotoVault Garage Slot',
+      description: 'Expand your garage with 1 additional motorcycle slot.',
+      amount: 100, // 1.00 EUR
+    }
+  };
+
+  const product = products[type];
+
   return await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [
@@ -16,10 +33,10 @@ export const createCheckoutSession = async (userId: number, userEmail: string) =
         price_data: {
           currency: 'eur',
           product_data: {
-            name: 'MotoVault AI Quick Add Credit',
-            description: '1 credit to scan a motorcycle registration document and add it instantly to your garage.',
+            name: product.name,
+            description: product.description,
           },
-          unit_amount: 100, // 1.00 EUR
+          unit_amount: product.amount,
         },
         quantity: 1,
       },
@@ -30,7 +47,7 @@ export const createCheckoutSession = async (userId: number, userEmail: string) =
     customer_email: userEmail,
     metadata: {
       userId: userId.toString(),
-      type: 'ai_scan_credit',
+      type: type,
     },
   });
 };

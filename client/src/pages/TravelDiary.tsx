@@ -24,24 +24,24 @@ export function TravelDiary() {
   const upcoming = logs.filter(l => l.isUpcoming);
   const past = logs.filter(l => !l.isUpcoming);
 
-  const countries = [...new Set(logs.map(l => l.location.split(',').pop()?.trim()))].filter(Boolean);
+  const countries = Array.from(new Set(logs.map(l => l.location.split(',').pop()?.trim()))).filter(Boolean);
 
   return (
     <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black font-display uppercase tracking-wide flex items-center gap-3">
-            <BookOpen className="w-7 h-7 text-primary" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl md:text-4xl font-black font-display uppercase tracking-tight flex items-center gap-3">
+            <BookOpen className="w-8 h-8 text-primary" />
             {t('travel.title')}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">{t('travel.subtitle')}</p>
+          <p className="text-muted-foreground text-sm font-medium leading-relaxed max-w-md">{t('travel.subtitle')}</p>
         </div>
         <button
           onClick={() => setFormOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-black font-bold rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-primary text-black font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-all shadow-lg shadow-primary/10 active:scale-95"
           data-testid="button-add-journey"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-5 h-5" />
           {t('travel.addJourney')}
         </button>
       </div>
@@ -53,13 +53,13 @@ export function TravelDiary() {
             { label: t('travel.stats.destinations'), value: countries.length, icon: Navigation },
             { label: t('travel.stats.upcoming'), value: upcoming.length, icon: Calendar },
           ].map(s => (
-            <div key={s.label} className="bg-card border border-white/8 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <s.icon className="w-5 h-5 text-primary" />
+            <div key={s.label} className="bg-card border border-white/8 rounded-2xl p-5 flex items-center gap-4 group hover:border-primary/20 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                <s.icon className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-black font-display text-primary">{s.value}</p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
+                <p className="text-3xl font-black font-display text-primary tracking-tighter leading-none">{s.value}</p>
+                <p className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mt-1">{s.label}</p>
               </div>
             </div>
           ))}

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from "@shared/routes";
 
 export function useScanAndSaveLibretto() {
   const queryClient = useQueryClient();
@@ -19,6 +20,7 @@ export function useScanAndSaveLibretto() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/motorcycles'] });
+      queryClient.invalidateQueries({ queryKey: [api.auth.me.path] });
     }
   });
 }

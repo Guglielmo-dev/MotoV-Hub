@@ -16,7 +16,7 @@ export const en = {
     settings: 'Settings',
     signOut: 'Sign Out',
     insights: 'insights',
-    version: 'Version',
+    version: 'Version v1.0',
   },
 
   // Auth
@@ -197,6 +197,9 @@ export const en = {
     docUrlLabel: 'Document URL (Optional)',
     docUrlPlaceholder: 'https://...',
     noDescription: 'No description provided.',
+    limitReached: 'Garage Limit Reached',
+    limitReachedDesc: 'You have reached the limit of {{count}} motorcycles for your base plan.',
+    buySlot: 'Expand Garage — 1.00€',
   },
 
   // Motorcycle Details
@@ -441,8 +444,11 @@ export const en = {
     notFound: '404 Page Not Found',
     notFoundDesc: 'Did you forget to add the page to the router?',
     developedBy: 'Developed by',
-    trademarks: 'All motorcycle brands mentioned are trademarks of their respective owners.',
-    independentProject: 'This project is an independent developer portfolio project.',
+    trademarks: 'All motorcycle brands mentioned are registered trademarks of their respective owners.',
+    independentProject: 'MotoVault is an independent project and is not affiliated with any motorcycle manufacturer.',
+    reviewUs: 'Enjoying MotoVault?',
+    reviewUsDesc: 'Help us grow by leaving a review',
+    writeReview: 'Write a Review',
     selectDate: 'Select date',
     changePhotoTooltip: 'Change photo',
   },

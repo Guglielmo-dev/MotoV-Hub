@@ -16,7 +16,7 @@ export const it = {
     settings: 'Impostazioni',
     signOut: 'Esci',
     insights: 'insights',
-    version: 'Versione',
+    version: 'Versione v1.0',
   },
 
   // Auth
@@ -197,6 +197,9 @@ export const it = {
     docUrlLabel: 'URL Documento (Opzionale)',
     docUrlPlaceholder: 'https://...',
     noDescription: 'Nessuna descrizione fornita.',
+    limitReached: 'Limite Garage Raggiunto',
+    limitReachedDesc: 'Hai raggiunto il limite di {{count}} moto per il tuo piano base.',
+    buySlot: 'Espandi Garage — 1.00€',
   },
 
   // Motorcycle Details
@@ -442,7 +445,10 @@ export const it = {
     notFoundDesc: 'Hai dimenticato di aggiungere la pagina al router?',
     developedBy: 'Sviluppato da',
     trademarks: 'Tutte le marche di moto menzionate sono marchi registrati dei rispettivi proprietari.',
-    independentProject: 'Questo progetto è un portfolio indipendente di uno sviluppatore.',
+    independentProject: 'MotoVault è un progetto indipendente e non è affiliato con alcun produttore di motociclette.',
+    reviewUs: 'Ti piace MotoVault?',
+    reviewUsDesc: 'Aiutaci a crescere lasciando una recensione',
+    writeReview: 'Scrivi Recensione',
     selectDate: 'Seleziona data',
     changePhotoTooltip: 'Cambia foto',
   },

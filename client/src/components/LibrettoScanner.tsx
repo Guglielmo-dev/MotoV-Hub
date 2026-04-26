@@ -6,40 +6,42 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { FileSearch, Loader2, UploadCloud, X, RefreshCw } from 'lucide-react';
+import { FileSearch, Loader2, UploadCloud, X, RefreshCw, Plus, Bike, CreditCard, Coins } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useScanAndSaveLibretto } from '@/hooks/use-scan-libretto';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { CreditCard, Coins } from 'lucide-react';
+import { useCreateStripeSession } from '@/hooks/use-stripe';
 import { cn } from '@/lib/utils';
 
 interface LibrettoScannerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  isLimitReached?: boolean;
 }
 
-type ScannerState = 'upload' | 'preview' | 'loading';
+type ScannerState = 'upload' | 'preview' | 'loading' | 'limit';
 
-export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScannerProps) {
+export function LibrettoScanner({ open, onOpenChange, onSuccess, isLimitReached }: LibrettoScannerProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { data: user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [state, setState] = useState<ScannerState>('upload');
+  const [state, setState] = useState<ScannerState>(isLimitReached ? 'limit' : 'upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const scanMutation = useScanAndSaveLibretto();
-  const [isBuying, setIsBuying] = useState(false);
 
   const scansUsed = user?.aiScansUsed || 0;
   const scansAvailable = user?.aiScansCount || 0;
   const creditsLeft = Math.max(0, scansAvailable - scansUsed);
   const hasCredits = creditsLeft > 0;
+
+  const slots = user?.motorcycleSlots || 2;
 
   const handleReset = useCallback(() => {
     setState('upload');
@@ -53,9 +55,13 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScann
   // Reset state when dialog opens
   React.useEffect(() => {
     if (open) {
-      handleReset();
+      if (isLimitReached) {
+        setState('limit');
+      } else {
+        handleReset();
+      }
     }
-  }, [open, handleReset]);
+  }, [open, isLimitReached, handleReset]);
 
   const handleFileSelect = (file: File) => {
     const isImage = file.type.startsWith('image/');
@@ -143,28 +149,8 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScann
     });
   };
 
-  const handleBuyCredit = async () => {
-    try {
-      setIsBuying(true);
-      const res = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST",
-        credentials: "include"
-      });
-      if (!res.ok) throw new Error("Failed to create session");
-      const { url } = await res.json();
-      window.location.href = url;
-    } catch (err) {
-      toast({
-        title: "Errore Stripe",
-        description: "Impossibile avviare il pagamento.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsBuying(false);
-    }
-  };
-
   const canClose = state !== 'loading';
+  const buySession = useCreateStripeSession();
 
   return (
     <Dialog
@@ -205,6 +191,33 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScann
         </div>
 
         <div className="p-6 pt-0">
+          {state === 'limit' && (
+            <div className="py-8 flex flex-col items-center text-center space-y-6">
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                <Bike className="w-10 h-10 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold uppercase tracking-tight text-white">{t('garage.limitReached')}</h3>
+                <p className="text-sm text-muted-foreground max-w-[280px]">
+                  {t('garage.limitReachedDesc', { count: slots })}
+                </p>
+              </div>
+              <button
+                onClick={() => buySession.mutate('motorcycle_slot')}
+                disabled={buySession.isPending}
+                className="w-full relative group overflow-hidden py-4 bg-gradient-to-r from-primary to-emerald-400 text-black rounded-xl font-black uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.5)] active:scale-[0.98] flex items-center justify-center gap-3"
+              >
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                {buySession.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                  <>
+                    <Plus className="w-5 h-5" />
+                    {t('garage.buySlot')}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
           {state === 'upload' && (
             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
               <div
@@ -260,11 +273,12 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess }: LibrettoScann
                     </div>
                   </div>
                   <Button 
-                    onClick={handleBuyCredit}
-                    disabled={isBuying}
-                    className="w-full bg-destructive hover:bg-destructive/90 text-white font-bold h-10 rounded-lg text-xs uppercase tracking-widest"
+                    onClick={() => buySession.mutate('ai_scan_credit')}
+                    disabled={buySession.isPending}
+                    className="w-full relative group overflow-hidden py-6 bg-gradient-to-r from-destructive to-orange-500 text-white font-black rounded-xl uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(239,68,68,0.4)] active:scale-[0.98]"
                   >
-                    {isBuying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Coins className="w-4 h-4 mr-2" />}
+                    <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                    {buySession.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Coins className="w-4 h-4 mr-2" />}
                     {i18n.language === 'it' ? 'Acquista 1 Credito — 1.00€' : 'Buy 1 Credit — 1.00€'}
                   </Button>
                 </div>

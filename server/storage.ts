@@ -93,6 +93,7 @@ export interface IStorage {
   // AI Scan Credit Management
   incrementAiScansCount(userId: number, amount: number): Promise<void>;
   useAiScan(userId: number): Promise<void>;
+  incrementMotorcycleSlots(userId: number, amount: number): Promise<void>;
 
   // Game Releases
   getGameReleases(): Promise<GameRelease[]>;
@@ -432,6 +433,15 @@ export class DatabaseStorage implements IStorage {
     
     await db.update(users)
       .set({ aiScansUsed: (user.aiScansUsed || 0) + 1 })
+      .where(eq(users.id, userId));
+  }
+
+  async incrementMotorcycleSlots(userId: number, amount: number): Promise<void> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) throw new Error("User not found");
+    
+    await db.update(users)
+      .set({ motorcycleSlots: (user.motorcycleSlots || 2) + amount })
       .where(eq(users.id, userId));
   }
 

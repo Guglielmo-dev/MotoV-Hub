@@ -74,7 +74,8 @@ export async function registerRoutes(
       tableName: 'session'
     }),
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      // Usa secure: true solo in produzione REALE (non locale) per evitare che i cookie vengano droppati su HTTP
+      secure: process.env.NODE_ENV === "production" && process.env.DATABASE_URL?.includes('supabase'),
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     }
   }));
@@ -343,6 +344,16 @@ Regole importanti:
       const user = await storage.getUser(userId);
       if (!user) return res.status(401).json({ message: "Unauthorized" });
 
+      const currentMotorcycles = await storage.getMotorcycles(userId);
+      const slots = user.motorcycleSlots || 2;
+
+      if (currentMotorcycles.length >= slots) {
+        return res.status(403).json({ 
+          message: "Hai raggiunto il limite massimo di moto per il tuo piano.",
+          limitReached: true 
+        });
+      }
+
       const scansUsed = user.aiScansUsed || 0;
       const scansAvailable = user.aiScansCount || 0;
 
@@ -384,6 +395,19 @@ Regole importanti:
   app.post(api.motorcycles.create.path, requireAuth, async (req, res) => {
     try {
       const userId = (req.session as any).userId;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const currentMotorcycles = await storage.getMotorcycles(userId);
+      const slots = user.motorcycleSlots || 2;
+
+      if (currentMotorcycles.length >= slots) {
+        return res.status(403).json({ 
+          message: "Hai raggiunto il limite massimo di moto per il tuo piano.",
+          limitReached: true 
+        });
+      }
+
       const input = api.motorcycles.create.input.parse(req.body);
       const motorcycle = await storage.createMotorcycle(userId, input);
       res.status(201).json(motorcycle);
@@ -1194,10 +1218,11 @@ Regole importanti:
   app.post("/api/stripe/create-checkout-session", requireAuth, async (req, res) => {
     try {
       const userId = (req.session as any).userId;
+      const { type = 'ai_scan_credit' } = req.body;
       const user = await storage.getUser(userId);
       if (!user || !user.email) return res.status(400).json({ message: "Devi avere un'email associata per acquistare crediti" });
 
-      const session = await createCheckoutSession(userId, user.email);
+      const session = await createCheckoutSession(userId, user.email, type);
       res.json({ url: session.url });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -1229,9 +1254,14 @@ Regole importanti:
       const userId = Number(session.metadata?.userId);
       const type = session.metadata?.type;
 
-      if (userId && type === 'ai_scan_credit') {
-        await storage.incrementAiScansCount(userId, 1);
-        console.log(`[Stripe] Added credit to user ${userId}`);
+      if (userId) {
+        if (type === 'ai_scan_credit') {
+          await storage.incrementAiScansCount(userId, 1);
+          console.log(`[Stripe] Added credit to user ${userId}`);
+        } else if (type === 'motorcycle_slot') {
+          await storage.incrementMotorcycleSlots(userId, 1);
+          console.log(`[Stripe] Added garage slot to user ${userId}`);
+        }
       }
     }
 
