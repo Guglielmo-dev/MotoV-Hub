@@ -31,9 +31,13 @@ export interface CommentWithAuthor extends CommunityComment {
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   getUserByGoogleId(googleId: string): Promise<User | undefined>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   deleteUser(id: number): Promise<void>;
+  updateResetToken(userId: number, token: string | null, expires: Date | null): Promise<void>;
+  updatePassword(userId: number, passwordHash: string): Promise<void>;
 
   getMotorcycles(userId: number): Promise<Motorcycle[]>;
   getMotorcycle(id: number): Promise<Motorcycle | undefined>;
@@ -116,8 +120,18 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(sql`lower(${users.email}) = lower(${email})`);
+    return user || undefined;
+  }
+
   async getUserByGoogleId(googleId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+    return user || undefined;
+  }
+
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.resetToken, token));
     return user || undefined;
   }
 
@@ -128,6 +142,18 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+
+  async updateResetToken(userId: number, token: string | null, expires: Date | null): Promise<void> {
+    await db.update(users)
+      .set({ resetToken: token, resetTokenExpires: expires })
+      .where(eq(users.id, userId));
+  }
+
+  async updatePassword(userId: number, passwordHash: string): Promise<void> {
+    await db.update(users)
+      .set({ password: passwordHash, resetToken: null, resetTokenExpires: null })
+      .where(eq(users.id, userId));
   }
 
   async getMotorcycles(userId: number): Promise<Motorcycle[]> {

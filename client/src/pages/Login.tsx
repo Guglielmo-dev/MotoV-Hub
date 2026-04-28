@@ -16,9 +16,11 @@ export function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     login({ username, password }, {
-      onSuccess: () => {
-        playMotorcycleRevSound();
-        setTimeout(() => setLocation("/"), 200);
+      onSuccess: async (user) => {
+        // Play sound and wait a bit for it to actually start before redirecting
+        // This prevents the browser from cancelling the audio fetch during navigation
+        await playMotorcycleRevSound(user.customAudioData);
+        setTimeout(() => setLocation("/"), 400);
       }
     });
   };
@@ -61,6 +63,12 @@ export function Login() {
                 placeholder={t('auth.passwordPlaceholder')}
                 required
               />
+            </div>
+
+            <div className="flex justify-end">
+              <Link href="/forgot-password">
+                <span className="text-sm text-primary hover:underline cursor-pointer font-medium">Password dimenticata?</span>
+              </Link>
             </div>
 
             <button

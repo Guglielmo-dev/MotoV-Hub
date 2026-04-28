@@ -15,6 +15,7 @@ import { rateLimit } from "express-rate-limit";
 import passport from "passport";
 import { setupAuth } from "./auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import crypto from "crypto";
 import {
   insertCommunityPostSchema,
   insertCommunityCommentSchema,
@@ -245,6 +246,59 @@ export async function registerRoutes(
     res.status(200).json(sanitizeUser(user));
   });
 
+  app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+
+      if (!user) {
+        // Security: don't reveal if user exists
+        return res.status(200).json({ message: "Se l'account esiste, riceverai un'email con le istruzioni." });
+      }
+
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiry = new Date(Date.now() + 3600000); // 1 hour
+
+      await storage.updateResetToken(user.id, token, expiry);
+
+      // In production, send email here.
+      const resetLink = `${req.headers.origin || 'http://localhost:5000'}/reset-password?token=${token}`;
+      console.log(`\n[AUTH] 📧 PASSWORD RESET REQUEST\nUser: ${user.username} (${email})\nLink: ${resetLink}\n`);
+
+      res.status(200).json({ message: "Se l'account esiste, riceverai un'email con le istruzioni." });
+    } catch (err) {
+      console.error("[ForgotPassword] Error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      if (!token || !password) {
+        return res.status(400).json({ message: "Dati mancanti" });
+      }
+
+      const user = await storage.getUserByResetToken(token);
+
+      if (!user || !user.resetTokenExpires || user.resetTokenExpires < new Date()) {
+        return res.status(400).json({ message: "Token non valido o scaduto" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 12);
+      await storage.updatePassword(user.id, hashedPassword);
+
+      res.status(200).json({ message: "Password aggiornata con successo!" });
+    } catch (err) {
+      console.error("[ResetPassword] Error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Motorcycle Routes
   // Motorcycle Routes
   app.post('/api/scan-libretto-and-save', requireAuth, upload.single('image'), async (req, res) => {
@@ -257,9 +311,9 @@ export async function registerRoutes(
       if (!geminiApiKey) {
         throw new Error("GEMINI_API_KEY non definita nelle variabili d'ambiente");
       }
-      
+
       const genAI = new GoogleGenerativeAI(geminiApiKey);
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: "gemini-flash-latest"
       });
 
@@ -317,14 +371,14 @@ Regole importanti:
         extractedData = JSON.parse(cleanJson);
       } catch {
         console.error("Gemini response non parsabile:", responseText);
-        return res.status(500).json({ 
-          message: "Risposta AI non valida, riprova" 
+        return res.status(500).json({
+          message: "Risposta AI non valida, riprova"
         });
       }
 
       if (extractedData.error === 'non_vehicle_document') {
-        return res.status(422).json({ 
-          message: "non_vehicle_document" 
+        return res.status(422).json({
+          message: "non_vehicle_document"
         });
       }
 
@@ -348,9 +402,9 @@ Regole importanti:
       const slots = user.motorcycleSlots || 2;
 
       if (currentMotorcycles.length >= slots) {
-        return res.status(403).json({ 
+        return res.status(403).json({
           message: "Hai raggiunto il limite massimo di moto per il tuo piano.",
-          limitReached: true 
+          limitReached: true
         });
       }
 
@@ -358,7 +412,7 @@ Regole importanti:
       const scansAvailable = user.aiScansCount || 0;
 
       if (scansUsed >= scansAvailable) {
-        return res.status(402).json({ 
+        return res.status(402).json({
           message: "no_credits_left",
           scansUsed,
           scansAvailable
@@ -370,11 +424,11 @@ Regole importanti:
       return res.status(201).json(motorcycle);
     } catch (err: any) {
       console.error("[ScanLibretto] Error:", err.stack || err.message || err);
-      
-      if (err.status === 429 || 
-          err.message?.includes('quota') ||
-          err.message?.includes('rate limit') ||
-          err.message?.includes('Too Many Requests')) {
+
+      if (err.status === 429 ||
+        err.message?.includes('quota') ||
+        err.message?.includes('rate limit') ||
+        err.message?.includes('Too Many Requests')) {
         return res.status(429).json({
           message: "Servizio temporaneamente occupato. Attendi 10 secondi e riprova."
         });
@@ -402,9 +456,9 @@ Regole importanti:
       const slots = user.motorcycleSlots || 2;
 
       if (currentMotorcycles.length >= slots) {
-        return res.status(403).json({ 
+        return res.status(403).json({
           message: "Hai raggiunto il limite massimo di moto per il tuo piano.",
-          limitReached: true 
+          limitReached: true
         });
       }
 
@@ -818,7 +872,7 @@ Regole importanti:
     try {
       const userId = (req.session as any).userId;
       const postId = Number(req.params.id as string);
-      const { content, parentId } = z.object({ 
+      const { content, parentId } = z.object({
         content: z.string().min(1),
         parentId: z.number().optional()
       }).parse(req.body);
@@ -948,8 +1002,8 @@ Regole importanti:
       const userId = (req.session as any).userId;
       const schema = z.object({
         audioEnabled: z.boolean().optional(),
-        customAudioData: z.string().optional(),
-        customAudioName: z.string().optional(),
+        customAudioData: z.string().optional().nullable(),
+        customAudioName: z.string().optional().nullable(),
         activeBrandId: z.string().optional().nullable(),
         activeCustomColor: z.string().optional().nullable(),
       });
@@ -969,7 +1023,7 @@ Regole importanti:
     try {
       const userId = (req.session as any).userId;
       await storage.deleteUser(userId);
-      
+
       // Cleanup session and passport auth
       req.logout((err) => {
         if (err) return next(err);
@@ -988,7 +1042,7 @@ Regole importanti:
     try {
       const userId = (req.session as any).userId;
       const data = updateProfileSchema.parse(req.body);
-      
+
       // Se lo username cambia, verifica che non sia già preso
       if (data.username) {
         const existing = await storage.getUserByUsername(data.username);
@@ -1018,7 +1072,7 @@ Regole importanti:
       const filePath = `avatars/${fileName}`;
 
       const { data, error } = await supabase.storage
-        .from('motorcycle-photos') // Riutilizziamo lo stesso bucket
+        .from('motorcycle-images') // Riutilizziamo lo stesso bucket
         .upload(filePath, req.file.buffer, {
           contentType: req.file.mimetype,
           upsert: true
@@ -1027,7 +1081,7 @@ Regole importanti:
       if (error) throw error;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('motorcycle-photos')
+        .from('motorcycle-images')
         .getPublicUrl(filePath);
 
       const updated = await storage.updateUserPreferences(userId, { avatarUrl: publicUrl });
@@ -1058,13 +1112,13 @@ Regole importanti:
   app.get(api.ratings.get.path, async (req, res) => {
     const { targetType, targetId } = req.params;
     const userId = (req.session as any).userId;
-    
+
     const stats = await storage.getAverageRating(targetType, targetId);
     let userRating = null;
     if (userId) {
       userRating = await storage.getUserRating(userId, targetType, targetId);
     }
-    
+
     res.json({
       ...stats,
       userRating
@@ -1173,7 +1227,7 @@ Regole importanti:
       const userId = (req.session as any).userId;
       const { score } = z.object({ score: z.number() }).parse(req.body);
       const gameScore = await storage.submitGameScore(userId, gameId, score);
-      
+
       // Return updated bests
       const bests = await storage.getGameScores(req.params.gameId as string, userId);
       res.status(201).json(bests);
@@ -1190,14 +1244,14 @@ Regole importanti:
 
   app.get("/api/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-  app.get("/api/auth/google/callback", 
+  app.get("/api/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/login?error=oauth" }),
-    (req, res) => {
+    async (req, res) => {
       // Sync Passport user with existing manual session logic
       if (req.user) {
         (req.session as any).userId = (req.user as any).id;
       }
-      res.redirect("/");
+      res.redirect("/?login=true");
     }
   );
 
@@ -1206,7 +1260,7 @@ Regole importanti:
     try {
       const { message, history } = req.body;
       if (!message) return res.status(400).json({ message: "Messaggio mancante" });
-      
+
       const response = await generateChatResponse(message, history);
       res.json({ response });
     } catch (error: any) {

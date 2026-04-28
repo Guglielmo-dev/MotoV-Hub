@@ -31,6 +31,8 @@ export const users = pgTable("users", {
   aiScansCount: integer("ai_scans_count").default(1), // Default 1 free scan
   aiScansUsed: integer("ai_scans_used").default(0),
   motorcycleSlots: integer("motorcycle_slots").default(2),
+  resetToken: text("reset_token"),
+  resetTokenExpires: timestamp("reset_token_expires"),
 });
 
 export type StripeProductType = 'ai_scan_credit' | 'motorcycle_slot';

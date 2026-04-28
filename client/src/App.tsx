@@ -12,6 +12,8 @@ import { createLazyComponent, prefetchPage } from "@/lib/route-prefetch";
 
 const Login = createLazyComponent("Login");
 const Register = createLazyComponent("Register");
+const ForgotPassword = createLazyComponent("ForgotPassword");
+const ResetPassword = createLazyComponent("ResetPassword");
 const Dashboard = createLazyComponent("Dashboard");
 const Garage = createLazyComponent("Garage");
 const MotorcycleDetails = createLazyComponent("MotorcycleDetails");
@@ -71,6 +73,8 @@ function Router() {
     <Switch>
       <Route path="/login"><AuthRoute component={Login} /></Route>
       <Route path="/register"><AuthRoute component={Register} /></Route>
+      <Route path="/forgot-password"><AuthRoute component={ForgotPassword} /></Route>
+      <Route path="/reset-password"><AuthRoute component={ResetPassword} /></Route>
 
       <Route path="/"><ProtectedRoute component={Dashboard} /></Route>
       <Route path="/garage"><ProtectedRoute component={Garage} /></Route>

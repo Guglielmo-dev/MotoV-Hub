@@ -21,6 +21,7 @@ import { useUpdatePreferences } from "@/hooks/use-preferences";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { Button } from "@/components/ui/button";
 import { useAuth, useDeleteAccount } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { AlertCircle } from "lucide-react";
 
 interface SettingsModalProps {
@@ -34,6 +35,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const updatePrefs = useUpdatePreferences();
   const audioFileRef = useRef<HTMLInputElement>(null);
   const { t, i18n } = useTranslation();
+  const { toast } = useToast();
 
   // Audio State (Synced with localStorage and optionally user profile)
   const [customAudioName, setCustomAudioName] = useState<string | null>(getCustomLoginAudioName);
@@ -76,25 +78,63 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     updatePrefs.mutate({ audioEnabled: enabled });
   };
 
-  const handleAudioFile = (file: File) => {
+  const handleAudioFile = async (file: File) => {
     if (!file.type.startsWith('audio/')) return;
+    
+    // Limit size to 2MB as defined in the backend
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: t('common.error'),
+        description: "Il file audio è troppo grande (max 2MB)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setCustomLoginAudio(dataUrl);
+    try {
+      const formData = new FormData();
+      formData.append("image", file); // Backend expects "image" field name even for audio
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Upload failed");
+      }
+
+      const { url } = await res.json();
+      
+      // Update local sound engine
+      setCustomLoginAudio(url);
       setCustomLoginAudioName(file.name);
+      
+      // Update UI state
       setCustomAudioName(file.name);
       setHasCustom(true);
-      setUploading(false);
       
-      // Save to persistence
-      updatePrefs.mutate({ 
-        customAudioData: dataUrl, 
+      // Save URL to server preferences
+      await updatePrefs.mutateAsync({ 
+        customAudioData: url, 
         customAudioName: file.name 
       });
-    };
-    reader.readAsDataURL(file);
+
+      toast({
+        title: "Successo",
+        description: "Audio salvato sul server",
+      });
+    } catch (error: any) {
+      toast({
+        title: t('common.error'),
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleRemoveAudio = () => {
@@ -323,7 +363,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                      <div className="flex gap-2">
                         <Button 
                           variant="ghost" size="icon" 
-                          onClick={() => playMotorcycleRevSound()} 
+                          onClick={() => playMotorcycleRevSound(user?.customAudioData)} 
                           className="h-9 w-9 border border-white/5 rounded-lg hover:bg-primary/20 hover:text-primary"
                         >
                           <Volume2 className="w-4 h-4" />

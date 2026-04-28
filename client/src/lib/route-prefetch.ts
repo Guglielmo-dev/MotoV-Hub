@@ -7,6 +7,8 @@ import { lazy } from "react";
 export const routeImports = {
   Login: () => import("@/pages/Login").then(m => ({ default: m.Login })),
   Register: () => import("@/pages/Register").then(m => ({ default: m.Register })),
+  ForgotPassword: () => import("@/pages/ForgotPassword").then(m => ({ default: m.ForgotPassword })),
+  ResetPassword: () => import("@/pages/ResetPassword").then(m => ({ default: m.ResetPassword })),
   Dashboard: () => import("@/pages/Dashboard").then(m => ({ default: m.Dashboard })),
   Garage: () => import("@/pages/Garage").then(m => ({ default: m.Garage })),
   MotorcycleDetails: () => import("@/pages/MotorcycleDetails").then(m => ({ default: m.MotorcycleDetails })),

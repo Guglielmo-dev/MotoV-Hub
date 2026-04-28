@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { NotificationInbox } from "./NotificationInbox";
 import { ChatBot } from "./ChatBot";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { initSoundEngine, playMotorcycleRevSound } from "@/lib/sound";
+import { useEffect } from "react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -29,6 +31,38 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
   const { data: user } = useAuth();
   const { t } = useTranslation();
+  const DEFAULT_REV_URL = "https://cavgduiyohxlghkyldur.supabase.co/storage/v1/object/public/motorcycle-images/audio/tanweraman-motorcycle-engine-rev-2-337870.mp3";
+
+  // Sync sound engine with user preferences on mount/user change
+  useEffect(() => {
+    if (user) {
+      console.log("[AudioDebug] User loaded:", user.username);
+      initSoundEngine(user);
+
+      const params = new URLSearchParams(window.location.search);
+      const isLogin = params.get('login') === 'true';
+      console.log("[AudioDebug] Login flag detected:", isLogin);
+
+      if (isLogin) {
+        const handleFirstInteraction = () => {
+          console.log("[AudioDebug] Interaction detected, playing sound...");
+          console.log("[AudioDebug] User audio data:", user.customAudioData);
+          playMotorcycleRevSound(user.customAudioData);
+          window.removeEventListener('click', handleFirstInteraction);
+        };
+
+        console.log("[AudioDebug] User audio data:", user.customAudioData);
+        playMotorcycleRevSound(user.customAudioData ?? DEFAULT_REV_URL)
+          .then(() => console.log("[AudioDebug] Auto-play success!"))
+          .catch((err) => {
+            console.log("[AudioDebug] Auto-play blocked, waiting for click. Error:", err.name);
+            window.addEventListener('click', handleFirstInteraction, { once: true });
+          });
+
+        window.history.replaceState({}, '', '/');
+      }
+    }
+  }, [user]);
 
   const toggleSidebar = () => {
     const next = !collapsed;
@@ -180,11 +214,11 @@ export function AppLayout({ children }: AppLayoutProps) {
               </div>
               <span className="opacity-50 font-black tracking-[0.1em] uppercase">{t('common.developedBy')} KAWACODER</span>
               <a
-                href="mailto:kawacoder@gmail.com"
+                href="mailto:kawacoder900@gmail.com"
                 className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 group px-2 py-1 bg-white/5 rounded-md"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
-                kawacoder@gmail.com
+                kawacoder900@gmail.com
               </a>
             </div>
             <div className="text-center sm:text-right space-y-2 opacity-60 max-w-xs leading-relaxed">
