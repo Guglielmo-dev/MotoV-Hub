@@ -13,6 +13,7 @@ export const it = {
     community: 'Community',
     travelDiary: 'Diario di Viaggio',
     games: 'Games',
+    shop: 'Store',
     settings: 'Impostazioni',
     signOut: 'Esci',
     insights: 'insights',
@@ -198,8 +199,8 @@ export const it = {
     docUrlPlaceholder: 'https://...',
     noDescription: 'Nessuna descrizione fornita.',
     limitReached: 'Limite Garage Raggiunto',
-    limitReachedDesc: 'Hai raggiunto il limite di {{count}} moto per il tuo piano base.',
-    buySlot: 'Espandi Garage — 1.00€',
+    limitReachedDesc: 'Hai raggiunto il limite di {{count}} moto. Sblocca il Garage Illimitato per aggiungere tutte le moto che vuoi!',
+    buySlot: 'Garage Illimitato — 1.00€',
   },
 
   // Motorcycle Details

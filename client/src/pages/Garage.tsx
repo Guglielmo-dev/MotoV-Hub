@@ -108,11 +108,11 @@ export function Garage() {
                   <div className="space-y-2">
                     <h3 className="text-xl font-bold uppercase tracking-tight">{t('garage.limitReached')}</h3>
                     <p className="text-sm text-muted-foreground max-w-[280px]">
-                      {t('garage.limitReachedDesc', { count: slots })}
+                      Hai raggiunto il limite di {slots} moto. Sblocca il <span className="text-primary font-bold">Garage Illimitato</span> per aggiungere tutte le moto che vuoi!
                     </p>
                   </div>
                   <button
-                    onClick={() => buySlot.mutate('motorcycle_slot')}
+                    onClick={() => buySlot.mutate('unlimited_garage')}
                     disabled={buySlot.isPending}
                     className="w-full relative group overflow-hidden py-4 bg-gradient-to-r from-primary to-emerald-400 text-black rounded-xl font-black uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.5)] active:scale-[0.98] flex items-center justify-center gap-3"
                   >

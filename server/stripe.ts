@@ -21,6 +21,11 @@ export const createCheckoutSession = async (userId: number, userEmail: string, t
       name: 'MotoVault Garage Slot',
       description: 'Expand your garage with 1 additional motorcycle slot.',
       amount: 100, // 1.00 EUR
+    },
+    unlimited_garage: {
+      name: 'MotoVault Garage Unlimited',
+      description: 'Unlock unlimited motorcycle slots in your garage forever.',
+      amount: 100, // 1.00 EUR
     }
   };
 

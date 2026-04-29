@@ -1315,6 +1315,10 @@ Regole importanti:
         } else if (type === 'motorcycle_slot') {
           await storage.incrementMotorcycleSlots(userId, 1);
           console.log(`[Stripe] Added garage slot to user ${userId}`);
+        } else if (type === 'unlimited_garage') {
+          // Set to a very high number for unlimited
+          await storage.updateUserSlots(userId, 999);
+          console.log(`[Stripe] UNLIMITED garage unlocked for user ${userId}`);
         }
       }
     }

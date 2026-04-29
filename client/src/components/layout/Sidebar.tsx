@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Bike, LogOut, ChevronLeft,
-  ChevronRight, Users, BookOpen, Gamepad2, Pencil, Check, X
+  ChevronRight, Users, BookOpen, Gamepad2, Pencil, Check, X,
+  ShoppingBag
 } from "lucide-react";
 import { useAuth, useLogout, useUpdateUsername } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
@@ -41,6 +42,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { href: "/community", label: t('nav.community'), icon: Users, exact: false, page: 'Community' },
     { href: "/travel", label: t('nav.travelDiary'), icon: BookOpen, exact: false, page: 'TravelDiary' },
     { href: "/games", label: t('nav.games'), icon: Gamepad2, exact: false, page: 'Games' },
+    { href: "/shop", label: t('nav.shop', { defaultValue: 'Store' }), icon: ShoppingBag, exact: false, page: 'Shop' },
   ];
 
   return (

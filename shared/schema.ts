@@ -35,7 +35,7 @@ export const users = pgTable("users", {
   resetTokenExpires: timestamp("reset_token_expires"),
 });
 
-export type StripeProductType = 'ai_scan_credit' | 'motorcycle_slot';
+export type StripeProductType = 'ai_scan_credit' | 'motorcycle_slot' | 'unlimited_garage';
 
 export const motorcycles = pgTable("motorcycles", {
   id: serial("id").primaryKey(),

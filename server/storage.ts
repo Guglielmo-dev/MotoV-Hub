@@ -97,6 +97,7 @@ export interface IStorage {
   // AI Scan Credit Management
   incrementAiScansCount(userId: number, amount: number): Promise<void>;
   useAiScan(userId: number): Promise<void>;
+  updateUserSlots(userId: number, slots: number): Promise<void>;
   incrementMotorcycleSlots(userId: number, amount: number): Promise<void>;
 
   // Game Releases
@@ -460,6 +461,10 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ aiScansUsed: (user.aiScansUsed || 0) + 1 })
       .where(eq(users.id, userId));
+  }
+
+  async updateUserSlots(userId: number, slots: number): Promise<void> {
+    await db.update(users).set({ motorcycleSlots: slots }).where(eq(users.id, userId));
   }
 
   async incrementMotorcycleSlots(userId: number, amount: number): Promise<void> {

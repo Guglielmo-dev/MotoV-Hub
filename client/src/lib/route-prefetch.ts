@@ -15,6 +15,8 @@ export const routeImports = {
   Community: () => import("@/pages/Community").then(m => ({ default: m.Community })),
   TravelDiary: () => import("@/pages/TravelDiary").then(m => ({ default: m.TravelDiary })),
   Games: () => import("@/pages/Games").then(m => ({ default: m.Games })),
+  Shop: () => import("./../pages/Shop"),
+  Welcome: () => import("@/pages/Welcome"),
 };
 
 export type PageName = keyof typeof routeImports;

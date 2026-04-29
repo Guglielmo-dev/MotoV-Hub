@@ -198,8 +198,8 @@ export const en = {
     docUrlPlaceholder: 'https://...',
     noDescription: 'No description provided.',
     limitReached: 'Garage Limit Reached',
-    limitReachedDesc: 'You have reached the limit of {{count}} motorcycles for your base plan.',
-    buySlot: 'Expand Garage — 1.00€',
+    limitReachedDesc: 'You have reached the limit of {{count}} motorcycles. Unlock Unlimited Garage to add as many bikes as you want!',
+    buySlot: 'Unlimited Garage — 1.00€',
   },
 
   // Motorcycle Details

@@ -20,6 +20,8 @@ const MotorcycleDetails = createLazyComponent("MotorcycleDetails");
 const Community = createLazyComponent("Community");
 const TravelDiary = createLazyComponent("TravelDiary");
 const Games = createLazyComponent("Games");
+const Shop = createLazyComponent("Shop");
+const Welcome = createLazyComponent("Welcome");
 
 const ContentLoader = () => (
   <div className="w-full flex items-center justify-center py-20 animate-in fade-in duration-500">
@@ -75,13 +77,16 @@ function Router() {
       <Route path="/register"><AuthRoute component={Register} /></Route>
       <Route path="/forgot-password"><AuthRoute component={ForgotPassword} /></Route>
       <Route path="/reset-password"><AuthRoute component={ResetPassword} /></Route>
+      <Route path="/welcome"><Welcome /></Route>
 
       <Route path="/"><ProtectedRoute component={Dashboard} /></Route>
       <Route path="/garage"><ProtectedRoute component={Garage} /></Route>
       <Route path="/garage/:id"><ProtectedRoute component={MotorcycleDetails} /></Route>
       <Route path="/community"><ProtectedRoute component={Community} /></Route>
       <Route path="/travel"><ProtectedRoute component={TravelDiary} /></Route>
-      <Route path="/games"><ProtectedRoute component={Games} /></Route>
+      <Route path="/games" component={Games} />
+      <Route path="/shop" component={Shop} />
+      <Route path="/welcome" component={Welcome} />
 
       <Route component={NotFound} />
     </Switch>
@@ -97,6 +102,7 @@ function App() {
       prefetchPage('Community');
       prefetchPage('TravelDiary');
       prefetchPage('Games');
+      prefetchPage('Welcome');
     }, 2000); // 2 seconds delay to avoid competing with initial load
     return () => clearTimeout(timer);
   }, []);
