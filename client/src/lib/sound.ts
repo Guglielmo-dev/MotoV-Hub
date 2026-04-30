@@ -1,5 +1,8 @@
 const AUDIO_ENABLED_KEY = 'motovault-audio-enabled';
 
+const CUSTOM_AUDIO_KEY = 'motovault-custom-audio';
+const CUSTOM_AUDIO_NAME_KEY = 'motovault-custom-audio-name';
+
 export function isAudioEnabled(): boolean {
   const val = localStorage.getItem(AUDIO_ENABLED_KEY);
   return val === null ? true : val === 'true';
@@ -26,35 +29,46 @@ function playDefaultSynth() {
 }
 
 async function playDefaultSound() {
+  console.log("[SoundEngine] Playing default sound:", DEFAULT_REV_URL);
   try {
     const audio = new Audio(DEFAULT_REV_URL);
     audio.crossOrigin = "anonymous";
     audio.volume = 0.6;
-    return audio.play().catch(() => playDefaultSynth());
+    return audio.play().catch((err) => {
+      console.warn("[SoundEngine] Default audio play blocked or failed:", err.name);
+      return playDefaultSynth();
+    });
   } catch (err) {
+    console.error("[SoundEngine] Default audio exception:", err);
     playDefaultSynth();
   }
 }
 
 export async function playMotorcycleRevSound(forceUrl?: string | null) {
-  if (!isAudioEnabled()) return;
+  if (!isAudioEnabled()) {
+    console.log("[SoundEngine] Audio is disabled, skipping play");
+    return;
+  }
   
   // Se abbiamo un URL (dallo user profile o caricato), proviamo quello
   if (forceUrl && forceUrl.startsWith('http')) {
+    console.log("[SoundEngine] Attempting to play custom audio:", forceUrl);
     try {
       const audio = new Audio(forceUrl);
       audio.crossOrigin = "anonymous";
       audio.volume = 0.8;
       return audio.play().catch((err) => {
-        console.warn("Custom audio failed, falling back to default:", err);
+        console.warn("[SoundEngine] Custom audio failed, falling back to default:", err.name);
         return playDefaultSound();
       });
     } catch (err) {
+      console.error("[SoundEngine] Custom audio exception:", err);
       return playDefaultSound();
     }
   }
   
   // Altrimenti suoniamo il default di sistema
+  console.log("[SoundEngine] No valid custom URL, playing default");
   return playDefaultSound();
 }
 
@@ -65,12 +79,41 @@ export function initSoundEngine(userData: any) {
   if (userData?.audioEnabled !== undefined) {
     localStorage.setItem(AUDIO_ENABLED_KEY, String(userData.audioEnabled));
   }
+  
+  if (userData?.customAudioData) {
+    localStorage.setItem(CUSTOM_AUDIO_KEY, userData.customAudioData);
+  } else if (userData?.customAudioData === null) {
+    localStorage.removeItem(CUSTOM_AUDIO_KEY);
+  }
+
+  if (userData?.customAudioName) {
+    localStorage.setItem(CUSTOM_AUDIO_NAME_KEY, userData.customAudioName);
+  } else if (userData?.customAudioName === null) {
+    localStorage.removeItem(CUSTOM_AUDIO_NAME_KEY);
+  }
 }
 
-// Funzioni di utilità rimaste per compatibilità UI ma semplificate
-export function setCustomLoginAudio(dataUrl: string) {}
-export function removeCustomLoginAudio() {}
-export function getCustomLoginAudioName(): string | null { return null; }
-export function setCustomLoginAudioName(name: string) {}
-export function removeCustomLoginAudioName() {}
-export function hasCustomLoginAudio(): boolean { return false; }
+// Funzioni di utilità per compatibilità UI
+export function setCustomLoginAudio(url: string) {
+  localStorage.setItem(CUSTOM_AUDIO_KEY, url);
+}
+
+export function removeCustomLoginAudio() {
+  localStorage.removeItem(CUSTOM_AUDIO_KEY);
+}
+
+export function getCustomLoginAudioName(): string | null {
+  return localStorage.getItem(CUSTOM_AUDIO_NAME_KEY);
+}
+
+export function setCustomLoginAudioName(name: string) {
+  localStorage.setItem(CUSTOM_AUDIO_NAME_KEY, name);
+}
+
+export function removeCustomLoginAudioName() {
+  localStorage.removeItem(CUSTOM_AUDIO_NAME_KEY);
+}
+
+export function hasCustomLoginAudio(): boolean {
+  return !!localStorage.getItem(CUSTOM_AUDIO_KEY);
+}

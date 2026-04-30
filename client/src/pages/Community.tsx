@@ -6,6 +6,7 @@ import { PostCard } from "./community/PostCard";
 import { PostFormDialog } from "./community/PostFormDialog";
 import { PostDetailDialog } from "./community/PostDetailDialog";
 import { useTranslation } from "react-i18next";
+import { SEO } from "@/components/layout/SEO";
 
 export function Community() {
   const [activeCategory, setActiveCategory] = useState('all');
@@ -22,6 +23,10 @@ export function Community() {
 
   return (
     <div className="space-y-8">
+      <SEO 
+        title={t('community.title')}
+        description="Unisciti alla community di MotoVault. Condividi foto, consigli tecnici e itinerari con altri motociclisti appassionati."
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-3xl md:text-4xl font-black font-display uppercase tracking-tight flex items-center gap-3">

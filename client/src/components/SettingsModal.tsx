@@ -137,14 +137,45 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     }
   };
 
-  const handleRemoveAudio = () => {
+  const handleRemoveAudio = async () => {
+    const audioUrl = user?.customAudioData;
+    
+    // 1. Physically remove from Supabase if URL exists
+    if (audioUrl) {
+      try {
+        const res = await fetch("/api/upload", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: audioUrl }),
+        });
+        
+        if (!res.ok) {
+          const errData = await res.json();
+          console.warn("Server storage deletion failed:", errData.message);
+          // We continue anyway to at least clear the DB reference
+        } else {
+          console.log("Successfully deleted file from Supabase storage");
+        }
+      } catch (err) {
+        console.warn("Could not delete file from storage, but continuing with preference update:", err);
+      }
+    }
+
+    // 2. Update local sound engine and UI state
     removeCustomLoginAudio();
     removeCustomLoginAudioName();
     setHasCustom(false);
     setCustomAudioName(null);
+
+    // 3. Update server preferences
     updatePrefs.mutate({ 
       customAudioData: null, 
       customAudioName: null 
+    });
+
+    toast({
+      title: "Rimosso",
+      description: "Audio rimosso con successo",
     });
   };
 
@@ -363,7 +394,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                      <div className="flex gap-2">
                         <Button 
                           variant="ghost" size="icon" 
-                          onClick={() => playMotorcycleRevSound(user?.customAudioData)} 
+                          onClick={() => playMotorcycleRevSound(hasCustom ? user?.customAudioData : null)} 
                           className="h-9 w-9 border border-white/5 rounded-lg hover:bg-primary/20 hover:text-primary"
                         >
                           <Volume2 className="w-4 h-4" />

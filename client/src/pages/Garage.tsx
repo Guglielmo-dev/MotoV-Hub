@@ -12,6 +12,7 @@ import { api } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateStripeSession } from "@/hooks/use-stripe";
 import { useAuth } from "@/hooks/use-auth";
+import { SEO } from "@/components/layout/SEO";
 
 export function Garage() {
   const { data: motorcycles, isLoading } = useMotorcycles();
@@ -80,6 +81,10 @@ export function Garage() {
 
   return (
     <div className="space-y-8 fade-in">
+      <SEO 
+        title={t('garage.title')} 
+        description="Il tuo garage digitale premium. Gestisci le tue moto, tieni traccia delle manutenzioni e scansiona i documenti con l'intelligenza artificiale."
+      />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold font-display">{t('garage.title')}</h1>
