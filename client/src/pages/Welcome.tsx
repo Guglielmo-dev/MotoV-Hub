@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Bike, Book, Users, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
+import { SEO } from "@/components/layout/SEO";
 
 export default function Welcome() {
   const { t } = useTranslation();
@@ -11,6 +12,10 @@ export default function Welcome() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col relative overflow-hidden">
+      <SEO 
+        title="Benvenuto Rider - MotoVault Digital Garage"
+        description="Entra nel mondo di MotoVault. Il primo garage digitale per gestire le tue moto, i tuoi viaggi e condividere la tua passione con la community."
+      />
       {/* Background Hero Image with Overlay */}
       <div 
         className="absolute inset-0 z-0 opacity-40 grayscale-[0.2]"

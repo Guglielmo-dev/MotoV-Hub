@@ -16,6 +16,8 @@ import passport from "passport";
 import { setupAuth } from "./auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import crypto from "crypto";
+import DOMPurify from "isomorphic-dompurify";
+import sharp from "sharp";
 import {
   insertCommunityPostSchema,
   insertCommunityCommentSchema,
@@ -108,6 +110,14 @@ export async function registerRoutes(
     return rest;
   };
 
+  // Funzione per sanificare l'input HTML/Text (SICUREZZA XSS)
+  const cleanInput = (text: string) => {
+    return DOMPurify.sanitize(text, {
+      ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
+      ALLOWED_ATTR: ['href', 'target', 'rel']
+    });
+  };
+
 
   // Multi-type upload endpoint (Images & Audio)
   app.post("/api/upload", authLimiter, requireAuth, upload.single("image"), async (req, res) => {
@@ -151,16 +161,31 @@ export async function registerRoutes(
 
     try {
       const ext = path.extname(req.file.originalname);
-      const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-      const bucketPath = isAudio ? `audio/${filename}` : filename;
+      let buffer = req.file.buffer;
+      let contentType = req.file.mimetype;
+      let finalFilename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+
+      // Ottimizzazione Immagini (PERFORMANCE 2026)
+      if (isImage) {
+        console.log(`[Upload] Optimizing image: ${req.file.originalname}`);
+        buffer = await sharp(req.file.buffer)
+          .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true }) // Ridimensiona se più grande di 1200px
+          .webp({ quality: 80 }) // Converti in WebP con qualità 80%
+          .toBuffer();
+        
+        contentType = 'image/webp';
+        finalFilename = finalFilename.replace(path.extname(finalFilename), '.webp');
+      }
+
+      const bucketPath = isAudio ? `audio/${finalFilename}` : finalFilename;
 
       console.log(`[Upload] Uploading to Supabase: bucket=motorcycle-images, path=${bucketPath}`);
 
       const { error } = await supabase.storage
         .from("motorcycle-images")
-        .upload(bucketPath, req.file.buffer, {
-          contentType: req.file.mimetype,
-          cacheControl: '3600',
+        .upload(bucketPath, buffer, {
+          contentType: contentType,
+          cacheControl: '31536000', // Cache 1 anno (Standard Google)
           upsert: false
         });
 
@@ -178,6 +203,64 @@ export async function registerRoutes(
     } catch (err) {
       console.error("[Upload] Handler exception:", err);
       res.status(500).json({ message: "Internal server error during upload" });
+    }
+  });
+
+  // DELETE endpoint to remove files from Supabase storage
+  app.delete("/api/upload", authLimiter, requireAuth, async (req, res) => {
+    const { url } = req.body;
+    console.log(`[Upload] Received delete request for URL: ${url}`);
+
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ message: "URL mancante o non valido" });
+    }
+
+    try {
+      const bucketName = "motorcycle-images";
+      
+      // Extract the path from the public URL
+      // A typical URL looks like: https://[PROJECT].supabase.co/storage/v1/object/public/motorcycle-images/[PATH]
+      // We need the [PATH] part.
+      
+      let filePath = "";
+      const searchStr = `/${bucketName}/`;
+      const bucketIndex = url.indexOf(searchStr);
+      
+      if (bucketIndex !== -1) {
+        filePath = url.substring(bucketIndex + searchStr.length);
+      } else {
+        // Fallback: try to find the filename if it's a simple URL
+        const parts = url.split('/');
+        filePath = parts[parts.length - 1];
+        
+        // If it was in the audio folder, we might need to prepend it
+        if (url.includes('/audio/')) {
+          filePath = `audio/${filePath}`;
+        }
+      }
+
+      if (!filePath) {
+        return res.status(400).json({ message: "Impossibile estrarre il percorso del file dall'URL" });
+      }
+
+      // Remove any query parameters if present (unlikely for public URLs but good to have)
+      filePath = filePath.split('?')[0];
+
+      console.log(`[Upload] Deleting from Supabase: bucket=${bucketName}, path=${filePath}`);
+
+      const { error } = await supabase.storage
+        .from(bucketName)
+        .remove([filePath]);
+
+      if (error) {
+        console.error("[Upload] Supabase delete error:", error);
+        return res.status(500).json({ message: "Errore durante la cancellazione su Supabase: " + error.message });
+      }
+
+      res.json({ message: "File eliminato con successo", path: filePath });
+    } catch (err) {
+      console.error("[Upload] Delete handler exception:", err);
+      res.status(500).json({ message: "Internal server error during delete" });
     }
   });
 
@@ -806,7 +889,15 @@ Regole importanti:
     try {
       const userId = (req.session as any).userId;
       const input = insertCommunityPostSchema.parse(req.body);
-      const post = await storage.createCommunityPost(userId, input);
+      
+      // Sanificazione Input (SICUREZZA XSS)
+      const sanitizedInput = {
+        ...input,
+        title: cleanInput(input.title),
+        content: cleanInput(input.content)
+      };
+
+      const post = await storage.createCommunityPost(userId, sanitizedInput);
       const withMeta = await storage.getCommunityPost(post.id, userId);
       res.status(201).json(withMeta);
     } catch (err) {
@@ -876,7 +967,11 @@ Regole importanti:
         content: z.string().min(1),
         parentId: z.number().optional()
       }).parse(req.body);
-      const comment = await storage.createCommunityComment(postId, userId, content, parentId);
+
+      // Sanificazione Input (SICUREZZA XSS)
+      const sanitizedContent = cleanInput(content);
+      
+      const comment = await storage.createCommunityComment(postId, userId, sanitizedContent, parentId);
       res.status(201).json(comment);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -911,7 +1006,17 @@ Regole importanti:
     try {
       const userId = (req.session as any).userId;
       const input = insertTravelLogSchema.parse(req.body);
-      const log = await storage.createTravelLog(userId, input);
+
+      // Sanificazione Input (SICUREZZA XSS)
+      const sanitizedInput = {
+        ...input,
+        title: cleanInput(input.title),
+        location: cleanInput(input.location),
+        description: cleanInput(input.description),
+        highlights: input.highlights ? cleanInput(input.highlights) : null
+      };
+
+      const log = await storage.createTravelLog(userId, sanitizedInput);
       res.status(201).json(log);
     } catch (err) {
       if (err instanceof z.ZodError) {

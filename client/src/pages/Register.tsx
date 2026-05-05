@@ -52,9 +52,12 @@ export function Register() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('auth.username')}</label>
+              <label htmlFor="username" className="text-sm font-medium text-foreground">{t('auth.username')}</label>
               <input
+                id="username"
+                name="username"
                 type="text"
+                autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-card border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
@@ -65,9 +68,12 @@ export function Register() {
             </div>
  
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('auth.email')}</label>
+              <label htmlFor="email" className="text-sm font-medium text-foreground">{t('auth.email')}</label>
               <input
+                id="email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-card border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
@@ -77,9 +83,12 @@ export function Register() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('auth.password')}</label>
+              <label htmlFor="password" className="text-sm font-medium text-foreground">{t('auth.password')}</label>
               <input
+                id="password"
+                name="password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-card border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"

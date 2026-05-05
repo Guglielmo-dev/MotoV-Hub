@@ -33,36 +33,46 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { t } = useTranslation();
   const DEFAULT_REV_URL = "https://cavgduiyohxlghkyldur.supabase.co/storage/v1/object/public/motorcycle-images/audio/tanweraman-motorcycle-engine-rev-2-337870.mp3";
 
-  // Sync sound engine with user preferences on mount/user change
+  // Sync sound engine and play start sound on mount/user change
   useEffect(() => {
     if (user) {
-      console.log("[AudioDebug] User loaded:", user.username);
+      console.log("[AudioDebug] App loaded for user:", user.username);
       initSoundEngine(user);
 
-      const params = new URLSearchParams(window.location.search);
-      const isLogin = params.get('login') === 'true';
-      console.log("[AudioDebug] Login flag detected:", isLogin);
+      // Clean up legacy login flag if present
+      if (window.location.search.includes('login=true')) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
 
-      if (isLogin) {
-        const handleFirstInteraction = () => {
-          console.log("[AudioDebug] Interaction detected, playing sound...");
-          console.log("[AudioDebug] User audio data:", user.customAudioData);
-          playMotorcycleRevSound(user.customAudioData);
-          window.removeEventListener('click', handleFirstInteraction);
-        };
+      const playSound = () => {
+        console.log("[AudioDebug] Playing start sound (URL: " + (user.customAudioData || "default") + ")");
+        playMotorcycleRevSound(user.customAudioData)
+          .then(() => console.log("[AudioDebug] Audio played successfully"))
+          .catch(err => console.warn("[AudioDebug] Audio play failed:", err));
+      };
 
-        console.log("[AudioDebug] User audio data:", user.customAudioData);
-        playMotorcycleRevSound(user.customAudioData ?? DEFAULT_REV_URL)
+      const handleInteraction = () => {
+        console.log("[AudioDebug] Interaction detected, attempting playback...");
+        playSound();
+        ['click', 'mousedown', 'keydown', 'touchstart', 'mousemove'].forEach(evt => 
+          window.removeEventListener(evt, handleInteraction, { capture: true })
+        );
+      };
+
+      // Auto-play attempt
+      setTimeout(() => {
+        console.log("[AudioDebug] Attempting auto-play...");
+        playMotorcycleRevSound(user.customAudioData)
           .then(() => console.log("[AudioDebug] Auto-play success!"))
           .catch((err) => {
-            console.log("[AudioDebug] Auto-play blocked, waiting for click. Error:", err.name);
-            window.addEventListener('click', handleFirstInteraction, { once: true });
+            console.log("[AudioDebug] Auto-play blocked, waiting for interaction...");
+            ['click', 'mousedown', 'keydown', 'touchstart', 'mousemove'].forEach(evt => 
+              window.addEventListener(evt, handleInteraction, { once: true, capture: true })
+            );
           });
-
-        window.history.replaceState({}, '', '/');
-      }
+      }, 500);
     }
-  }, [user]);
+  }, [user?.id]);
 
   const toggleSidebar = () => {
     const next = !collapsed;
