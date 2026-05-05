@@ -99,6 +99,7 @@ export interface IStorage {
   useAiScan(userId: number): Promise<void>;
   updateUserSlots(userId: number, slots: number): Promise<void>;
   incrementMotorcycleSlots(userId: number, amount: number): Promise<void>;
+  updateUserProStatus(userId: number, isPro: boolean): Promise<void>;
 
   // Game Releases
   getGameReleases(): Promise<GameRelease[]>;
@@ -474,6 +475,10 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ motorcycleSlots: (user.motorcycleSlots || 2) + amount })
       .where(eq(users.id, userId));
+  }
+
+  async updateUserProStatus(userId: number, isPro: boolean): Promise<void> {
+    await db.update(users).set({ isPro }).where(eq(users.id, userId));
   }
 
   async getGameReleases(): Promise<GameRelease[]> {

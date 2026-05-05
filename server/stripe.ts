@@ -26,6 +26,11 @@ export const createCheckoutSession = async (userId: number, userEmail: string, t
       name: 'MotoVault Garage Unlimited',
       description: 'Unlock unlimited motorcycle slots in your garage forever.',
       amount: 100, // 1.00 EUR
+    },
+    pro_subscription: {
+      name: 'MotoVault Pro',
+      description: 'Unlock unlimited garage slots, unlimited AI scans and a smarter AI Assistant.',
+      amount: 999, // 9.99 EUR
     }
   };
 

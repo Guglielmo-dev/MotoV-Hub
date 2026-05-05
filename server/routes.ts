@@ -401,7 +401,7 @@ Regole importanti:
       const currentMotorcycles = await storage.getMotorcycles(userId);
       const slots = user.motorcycleSlots || 2;
 
-      if (currentMotorcycles.length >= slots) {
+      if (!user.isPro && currentMotorcycles.length >= slots) {
         return res.status(403).json({
           message: "Hai raggiunto il limite massimo di moto per il tuo piano.",
           limitReached: true
@@ -411,7 +411,7 @@ Regole importanti:
       const scansUsed = user.aiScansUsed || 0;
       const scansAvailable = user.aiScansCount || 0;
 
-      if (scansUsed >= scansAvailable) {
+      if (!user.isPro && scansUsed >= scansAvailable) {
         return res.status(402).json({
           message: "no_credits_left",
           scansUsed,
@@ -455,7 +455,7 @@ Regole importanti:
       const currentMotorcycles = await storage.getMotorcycles(userId);
       const slots = user.motorcycleSlots || 2;
 
-      if (currentMotorcycles.length >= slots) {
+      if (!user.isPro && currentMotorcycles.length >= slots) {
         return res.status(403).json({
           message: "Hai raggiunto il limite massimo di moto per il tuo piano.",
           limitReached: true
@@ -1258,10 +1258,14 @@ Regole importanti:
   // ── AI Chat Route ───────────────────────────────────────────────────────
   app.post("/api/ai/chat", requireAuth, async (req, res) => {
     try {
+      const userId = (req.session as any).userId;
+      const user = await storage.getUser(userId);
+      const isPro = user?.isPro || false;
+
       const { message, history } = req.body;
       if (!message) return res.status(400).json({ message: "Messaggio mancante" });
 
-      const response = await generateChatResponse(message, history);
+      const response = await generateChatResponse(message, history, isPro);
       res.json({ response });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -1319,6 +1323,9 @@ Regole importanti:
           // Set to a very high number for unlimited
           await storage.updateUserSlots(userId, 999);
           console.log(`[Stripe] UNLIMITED garage unlocked for user ${userId}`);
+        } else if (type === 'pro_subscription') {
+          await storage.updateUserProStatus(userId, true);
+          console.log(`[Stripe] Pro subscription unlocked for user ${userId}`);
         }
       }
     }

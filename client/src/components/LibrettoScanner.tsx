@@ -281,6 +281,18 @@ export function LibrettoScanner({ open, onOpenChange, onSuccess, isLimitReached 
                     {buySession.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Coins className="w-4 h-4 mr-2" />}
                     {i18n.language === 'it' ? 'Acquista 1 Credito — 1.00€' : 'Buy 1 Credit — 1.00€'}
                   </Button>
+                  <div className="w-full text-center relative py-2">
+                    <span className="bg-card px-2 text-[10px] text-muted-foreground uppercase absolute left-1/2 -translate-x-1/2 -top-1.5 z-10">OPPURE</span>
+                    <div className="absolute top-1/2 left-0 right-0 h-px bg-white/10" />
+                  </div>
+                  <Button 
+                    onClick={() => buySession.mutate('pro_subscription')}
+                    disabled={buySession.isPending}
+                    className="w-full relative group overflow-hidden py-6 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-black rounded-xl uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] active:scale-[0.98] border border-white/10"
+                  >
+                    {buySession.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Coins className="w-4 h-4 mr-2" />}
+                    PASSA A PRO (TUTTO ILLIMITATO)
+                  </Button>
                 </div>
               )}
 

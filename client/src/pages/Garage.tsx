@@ -124,6 +124,21 @@ export function Garage() {
                       </>
                     )}
                   </button>
+                  <div className="w-full text-center relative py-2">
+                    <span className="bg-card px-2 text-xs text-muted-foreground uppercase absolute left-1/2 -translate-x-1/2 -top-1.5 z-10">OPPURE</span>
+                    <div className="absolute top-1/2 left-0 right-0 h-px bg-white/10" />
+                  </div>
+                  <button
+                    onClick={() => buySlot.mutate('pro_subscription')}
+                    disabled={buySlot.isPending}
+                    className="w-full relative group overflow-hidden py-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-black uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] active:scale-[0.98] flex items-center justify-center gap-3 border border-white/10"
+                  >
+                    {buySlot.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                      <>
+                        PASSA A PRO (TUTTO INCLUSO)
+                      </>
+                    )}
+                  </button>
                 </div>
               ) : (
                 <>

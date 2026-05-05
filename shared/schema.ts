@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   activeBrandId: text("active_brand_id").default('kawasaki'),
   activeCustomColor: text("active_custom_color"), // If set, activeBrandId should be treated as null
   isAdmin: boolean("is_admin").default(false),
+  isPro: boolean("is_pro").default(false),
   lastReadNotificationsAt: timestamp("last_read_notifications_at"),
   readNotificationIds: integer("read_notification_ids").array().default([]),
   dismissedNotificationIds: integer("dismissed_notification_ids").array().default([]),
@@ -35,7 +36,7 @@ export const users = pgTable("users", {
   resetTokenExpires: timestamp("reset_token_expires"),
 });
 
-export type StripeProductType = 'ai_scan_credit' | 'motorcycle_slot' | 'unlimited_garage';
+export type StripeProductType = 'ai_scan_credit' | 'motorcycle_slot' | 'unlimited_garage' | 'pro_subscription';
 
 export const motorcycles = pgTable("motorcycles", {
   id: serial("id").primaryKey(),

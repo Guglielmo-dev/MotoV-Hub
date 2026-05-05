@@ -39,9 +39,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const links: { href: string; label: string; icon: any; exact: boolean; page: PageName }[] = [
     { href: "/", label: t('nav.dashboard'), icon: LayoutDashboard, exact: true, page: 'Dashboard' },
     { href: "/garage", label: t('nav.garage'), icon: Bike, exact: false, page: 'Garage' },
-    { href: "/community", label: t('nav.community'), icon: Users, exact: false, page: 'Community' },
+    // { href: "/community", label: t('nav.community'), icon: Users, exact: false, page: 'Community' },
     { href: "/travel", label: t('nav.travelDiary'), icon: BookOpen, exact: false, page: 'TravelDiary' },
-    { href: "/games", label: t('nav.games'), icon: Gamepad2, exact: false, page: 'Games' },
+    // { href: "/games", label: t('nav.games'), icon: Gamepad2, exact: false, page: 'Games' },
     { href: "/shop", label: t('nav.shop', { defaultValue: 'Store' }), icon: ShoppingBag, exact: false, page: 'Shop' },
   ];
 

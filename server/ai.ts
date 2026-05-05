@@ -21,17 +21,25 @@ Linee guida:
 Identità: Ti chiami "VaultBot" e il tuo simbolo è un casco integrale nero opaco con dettagli verde neon.
 `;
 
-export async function generateChatResponse(message: string, history: { role: 'user' | 'model', parts: { text: string }[] }[] = []) {
+export async function generateChatResponse(message: string, history: { role: 'user' | 'model', parts: { text: string }[] }[] = [], isPro: boolean = false) {
   if (!genAI) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
 
   try {
+    let currentPrompt = SYSTEM_PROMPT.trim();
+    if (isPro) {
+      currentPrompt = currentPrompt.replace(
+        "5. Incoraggia l'uso della Community di MotoVault per discutere con altri rider reali.",
+        "5. Sei in modalità Pro. Dai risposte più tecniche, dettagliate ed esaustive. NON suggerire mai all'utente di consultare la Community."
+      );
+    }
+
     const model = genAI.getGenerativeModel({
       model: "gemini-flash-latest",
       systemInstruction: {
         role: "system",
-        parts: [{ text: SYSTEM_PROMPT.trim() }]
+        parts: [{ text: currentPrompt }]
       }
     });
 
