@@ -1,5 +1,19 @@
 const AUDIO_ENABLED_KEY = 'motovault-audio-enabled';
 
+let initialSoundPlayed = false;
+
+export function markInitialSoundPlayed() {
+  initialSoundPlayed = true;
+}
+
+export function hasInitialSoundBeenPlayed() {
+  return initialSoundPlayed;
+}
+
+export function resetInitialSoundFlag() {
+  initialSoundPlayed = false;
+}
+
 const CUSTOM_AUDIO_KEY = 'motovault-custom-audio';
 const CUSTOM_AUDIO_NAME_KEY = 'motovault-custom-audio-name';
 

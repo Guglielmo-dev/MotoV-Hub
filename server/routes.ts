@@ -270,7 +270,14 @@ export async function registerRoutes(
       const input = api.auth.register.input.parse(req.body);
       const existingUser = await storage.getUserByUsername(input.username);
       if (existingUser) {
-        return res.status(400).json({ message: "Username already exists", field: "username" });
+        return res.status(400).json({ message: "Username già esistente", field: "username" });
+      }
+
+      if (input.email) {
+        const existingEmail = await storage.getUserByEmail(input.email);
+        if (existingEmail) {
+          return res.status(400).json({ message: "Email già in uso", field: "email" });
+        }
       }
 
       // Password Hashing (SICUREZZA 1)

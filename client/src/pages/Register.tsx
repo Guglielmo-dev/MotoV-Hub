@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRegister } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { Bike, ArrowRight } from "lucide-react";
-import { playMotorcycleRevSound } from "@/lib/sound";
+import { playMotorcycleRevSound, markInitialSoundPlayed } from "@/lib/sound";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { GoogleButton } from "@/components/ui/GoogleButton";
@@ -20,6 +20,7 @@ export function Register() {
     register({ username, email, password }, {
       onSuccess: () => {
         playMotorcycleRevSound();
+        markInitialSoundPlayed();
         setTimeout(() => setLocation("/"), 200);
       }
     });

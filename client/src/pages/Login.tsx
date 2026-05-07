@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLogin } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { Bike, ArrowRight } from "lucide-react";
-import { playMotorcycleRevSound } from "@/lib/sound";
+import { playMotorcycleRevSound, markInitialSoundPlayed } from "@/lib/sound";
 import { useTranslation } from "react-i18next";
 import { GoogleButton } from "@/components/ui/GoogleButton";
 
@@ -20,6 +20,7 @@ export function Login() {
         // Play sound and wait a bit for it to actually start before redirecting
         // This prevents the browser from cancelling the audio fetch during navigation
         await playMotorcycleRevSound(user.customAudioData);
+        markInitialSoundPlayed();
         setTimeout(() => setLocation("/"), 400);
       }
     });

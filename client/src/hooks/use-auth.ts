@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
+import { resetInitialSoundFlag } from "@/lib/sound";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 
@@ -91,6 +92,7 @@ export function useLogout() {
     onSuccess: () => {
       queryClient.setQueryData([api.auth.me.path], null);
       queryClient.clear();
+      resetInitialSoundFlag();
       toast({ title: "Logged out", description: "See you next time on the road." });
     },
   });

@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { NotificationInbox } from "./NotificationInbox";
 import { ChatBot } from "./ChatBot";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { initSoundEngine, playMotorcycleRevSound } from "@/lib/sound";
+import { initSoundEngine, playMotorcycleRevSound, hasInitialSoundBeenPlayed, markInitialSoundPlayed } from "@/lib/sound";
 import { useEffect } from "react";
 
 interface AppLayoutProps {
@@ -23,6 +23,9 @@ const getInitials = (name: string) => {
   }
   return name.slice(0, 2).toUpperCase();
 };
+
+// Global variable to track if sound has been played in this JS session (prevents re-play on SPA remount)
+// REMOVED - now managed in sound.ts
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -43,34 +46,45 @@ export function AppLayout({ children }: AppLayoutProps) {
       if (window.location.search.includes('login=true')) {
         window.history.replaceState({}, '', window.location.pathname);
       }
+      
+      // Only play the sound if it hasn't been played in this session yet
+      if (!hasInitialSoundBeenPlayed()) {
+        const playSound = () => {
+          console.log("[AudioDebug] Playing start sound (URL: " + (user.customAudioData || "default") + ")");
+          playMotorcycleRevSound(user.customAudioData)
+            .then(() => {
+              console.log("[AudioDebug] Audio played successfully");
+              markInitialSoundPlayed();
+            })
+            .catch(err => console.warn("[AudioDebug] Audio play failed:", err));
+        };
 
-      const playSound = () => {
-        console.log("[AudioDebug] Playing start sound (URL: " + (user.customAudioData || "default") + ")");
-        playMotorcycleRevSound(user.customAudioData)
-          .then(() => console.log("[AudioDebug] Audio played successfully"))
-          .catch(err => console.warn("[AudioDebug] Audio play failed:", err));
-      };
+        const handleInteraction = () => {
+          console.log("[AudioDebug] Interaction detected, attempting playback...");
+          playSound();
+          ['click', 'mousedown', 'keydown', 'touchstart', 'mousemove'].forEach(evt => 
+            window.removeEventListener(evt, handleInteraction, { capture: true })
+          );
+        };
 
-      const handleInteraction = () => {
-        console.log("[AudioDebug] Interaction detected, attempting playback...");
-        playSound();
-        ['click', 'mousedown', 'keydown', 'touchstart', 'mousemove'].forEach(evt => 
-          window.removeEventListener(evt, handleInteraction, { capture: true })
-        );
-      };
-
-      // Auto-play attempt
-      setTimeout(() => {
-        console.log("[AudioDebug] Attempting auto-play...");
-        playMotorcycleRevSound(user.customAudioData)
-          .then(() => console.log("[AudioDebug] Auto-play success!"))
-          .catch((err) => {
-            console.log("[AudioDebug] Auto-play blocked, waiting for interaction...");
-            ['click', 'mousedown', 'keydown', 'touchstart', 'mousemove'].forEach(evt => 
-              window.addEventListener(evt, handleInteraction, { once: true, capture: true })
-            );
-          });
-      }, 500);
+        // Auto-play attempt
+        setTimeout(() => {
+          console.log("[AudioDebug] Attempting auto-play...");
+          playMotorcycleRevSound(user.customAudioData)
+            .then(() => {
+              console.log("[AudioDebug] Auto-play success!");
+              markInitialSoundPlayed();
+            })
+            .catch((err) => {
+              console.log("[AudioDebug] Auto-play blocked, waiting for interaction...");
+              ['click', 'mousedown', 'keydown', 'touchstart', 'mousemove'].forEach(evt => 
+                window.addEventListener(evt, handleInteraction, { once: true, capture: true })
+              );
+            });
+        }, 500);
+      } else {
+        console.log("[AudioDebug] Sound already played in this session, skipping.");
+      }
     }
   }, [user?.id]);
 
